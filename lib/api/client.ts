@@ -1,6 +1,45 @@
+"use client";
+
+import { toast } from "sonner";
 import { clearToken, getToken } from "@/lib/auth/token";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
+const TOAST_SUCCESS_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
+
+function maybeSuccessToast(method: string | undefined, payload: unknown) {
+  const normalizedMethod = (method ?? "GET").toUpperCase();
+  if (!TOAST_SUCCESS_METHODS.has(normalizedMethod)) {
+    return;
+  }
+
+  const body = payload as { message?: string; success?: string } | null;
+  if (body?.message) {
+    toast.success(body.message);
+    return;
+  }
+
+  if (body?.success) {
+    toast.success(body.success);
+    return;
+  }
+
+  if (normalizedMethod === "POST") {
+    toast.success("Created successfully");
+    return;
+  }
+
+  if (normalizedMethod === "PATCH") {
+    toast.success("Updated successfully");
+    return;
+  }
+
+  if (normalizedMethod === "DELETE") {
+    toast.success("Deleted successfully");
+    return;
+  }
+
+  toast.success("Saved successfully");
+}
 
 export class ApiError extends Error {
   status: number;
@@ -59,8 +98,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}) 
   }
 
   if (response.status === 204) {
+    maybeSuccessToast(options.method, null);
     return undefined as T;
   }
 
+  maybeSuccessToast(options.method, payload);
   return payload as T;
 }

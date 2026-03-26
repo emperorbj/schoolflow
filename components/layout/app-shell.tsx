@@ -2,6 +2,21 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import {
+  BellRing,
+  BookOpenCheck,
+  BookCopy,
+  ChevronDown,
+  ClipboardList,
+  Crown,
+  GraduationCap,
+  LayoutDashboard,
+  NotebookPen,
+  Settings,
+  School,
+  UserCircle2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { clearToken } from "@/lib/auth/token";
@@ -13,22 +28,27 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-const navItems: { href: AppRoute; label: string }[] = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/admin", label: "Admin" },
-  { href: "/students", label: "Students" },
-  { href: "/assessments", label: "Assessments" },
-  { href: "/class-results", label: "Class Results" },
-  { href: "/headteacher", label: "Headteacher" },
-  { href: "/principal", label: "Principal" },
-  { href: "/materials", label: "Materials" },
-  { href: "/notifications", label: "Notifications" },
+const navItems: { href: AppRoute; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/results", label: "Results", icon: ClipboardList },
+  { href: "/materials", label: "Materials", icon: BookCopy },
+  { href: "/admin", label: "Admin", icon: School },
+  { href: "/students", label: "Students", icon: GraduationCap },
+  { href: "/assessments", label: "Assessments", icon: NotebookPen },
+  { href: "/class-results", label: "Class Results", icon: ClipboardList },
+  { href: "/headteacher", label: "Headteacher", icon: BookOpenCheck },
+  { href: "/principal", label: "Principal", icon: Crown },
+  { href: "/notifications", label: "Notifications", icon: BellRing },
 ];
 
 export function AppShell({ user, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const allowedItems = navItems.filter((item) => canAccess(item.href, user.role));
+  const allowedItems =
+    user.role === "STUDENT"
+      ? navItems.filter((item) => ["/results", "/materials"].includes(item.href))
+      : navItems.filter((item) => canAccess(item.href, user.role) && item.href !== "/results");
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const onLogout = () => {
     clearToken();
@@ -49,17 +69,19 @@ export function AppShell({ user, children }: AppShellProps) {
           {allowedItems.map((item) => {
             const isActive =
               pathname === item.href || pathname?.startsWith(`${item.href}/`);
+            const Icon = item.icon;
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`block rounded-lg px-3 py-2 text-sm transition ${
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition ${
                   isActive
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-indigo-600 text-white"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
+                <Icon className="size-4" />
                 {item.label}
               </Link>
             );
@@ -78,9 +100,42 @@ export function AppShell({ user, children }: AppShellProps) {
 
           <div className="flex items-center gap-3">
             <Badge>{user.role.replaceAll("_", " ")}</Badge>
-            <Button variant="outline" onClick={onLogout}>
-              Logout
-            </Button>
+            <div className="relative">
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => setProfileOpen((value) => !value)}
+              >
+                <UserCircle2 className="size-4" />
+                Profile
+                <ChevronDown className="size-4" />
+              </Button>
+              {profileOpen ? (
+                <div className="absolute right-0 z-30 mt-2 w-64 rounded-xl border bg-popover p-2 shadow-lg">
+                  <div className="rounded-lg px-3 py-2">
+                    <p className="text-sm font-medium">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <Settings className="size-4" />
+                    Profile settings
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+                    onClick={onLogout}
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </header>
 

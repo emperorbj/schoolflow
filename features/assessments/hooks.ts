@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/features/assessments/api";
-import type { GetScoreSheetQuery, SubmissionStatusQuery } from "@/types/assessments";
+import type { GetScoreSheetQuery, StudentCountsQuery, SubmissionStatusQuery } from "@/types/assessments";
 
 export function useTeachingContextsQuery(enabled = true) {
   return useQuery({
@@ -53,5 +53,13 @@ export function useSubmissionStatusQuery(params: SubmissionStatusQuery | null, e
     queryKey: ["assessments", "submission-status", params?.classId, params?.termId],
     queryFn: () => api.submissionStatus(params as SubmissionStatusQuery),
     enabled: enabled && Boolean(params?.classId) && Boolean(params?.termId),
+  });
+}
+
+export function useStudentCountsQuery(params: StudentCountsQuery | null, enabled = true) {
+  return useQuery({
+    queryKey: ["assessments", "student-counts", params?.subjectId, params?.termId, params?.classId ?? "all"],
+    queryFn: () => api.getStudentCounts(params as StudentCountsQuery),
+    enabled: enabled && Boolean(params?.subjectId) && Boolean(params?.termId),
   });
 }

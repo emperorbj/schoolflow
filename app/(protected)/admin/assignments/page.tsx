@@ -3,6 +3,16 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowLeft,
+  BookUser,
+  CircleAlert,
+  ClipboardCheck,
+  Filter,
+  UserCheck2,
+  UserMinus2,
+  UserPlus2,
+} from "lucide-react";
+import {
   useClassesQuery,
   useClassCoverageQuery,
   useCreateTeachingAssignmentMutation,
@@ -65,39 +75,61 @@ export default function AdminAssignmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Teacher–subject assignments</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Assign subject teachers to classes, view coverage, and unassign when needed.
+      <Card className="border-0 bg-gradient-to-r from-indigo-100/70 via-indigo-50 to-background shadow-sm">
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold">Teacher-subject assignments</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Assign subject teachers to classes, view coverage, and unassign when needed.
+              </p>
+            </div>
+            <Button variant="outline" asChild className="gap-2">
+              <Link href="/admin">
+                <ArrowLeft className="size-4" />
+                Admin setup
+              </Link>
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
+
+      <div className="flex flex-wrap gap-2">
+        {classes.error || terms.error || subjects.error || users.error ? (
+          <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            {errorText(classes.error ?? terms.error ?? subjects.error ?? users.error)}
           </p>
-        </div>
-        <Button variant="outline" asChild>
-          <Link href="/admin">← Admin setup</Link>
-        </Button>
+        ) : null}
+        {coverage.error ? (
+          <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            {errorText(coverage.error)}
+          </p>
+        ) : null}
+        {assign.error ? (
+          <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            {errorText(assign.error)}
+          </p>
+        ) : null}
+        {unassign.error ? (
+          <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            {errorText(unassign.error)}
+          </p>
+        ) : null}
       </div>
 
-      {classes.error || terms.error || subjects.error || users.error ? (
-        <p className="text-sm text-destructive">
-          {errorText(classes.error ?? terms.error ?? subjects.error ?? users.error)}
-        </p>
-      ) : null}
-      {coverage.error ? (
-        <p className="text-sm text-destructive">{errorText(coverage.error)}</p>
-      ) : null}
-      {assign.error ? <p className="text-sm text-destructive">{errorText(assign.error)}</p> : null}
-      {unassign.error ? <p className="text-sm text-destructive">{errorText(unassign.error)}</p> : null}
-
-      <Card>
+      <Card className="border-indigo-200/80 bg-gradient-to-br from-indigo-50 to-white">
         <CardHeader>
-          <CardTitle>Coverage filters</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="size-5 text-indigo-600" />
+            Coverage filters
+          </CardTitle>
           <CardDescription>
             Pick a class to load active assignments. Optionally limit to one term.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           <Select value={classId || undefined} onValueChange={setClassId}>
-            <SelectTrigger className="h-10 w-[220px]">
+            <SelectTrigger className="h-10 w-[240px] bg-white">
               <SelectValue placeholder="Class" />
             </SelectTrigger>
             <SelectContent>
@@ -111,7 +143,7 @@ export default function AdminAssignmentsPage() {
             </SelectContent>
           </Select>
           <Select value={termFilter} onValueChange={setTermFilter}>
-            <SelectTrigger className="h-10 w-[220px]">
+            <SelectTrigger className="h-10 w-[240px] bg-white">
               <SelectValue placeholder="Term scope" />
             </SelectTrigger>
             <SelectContent>
@@ -129,31 +161,39 @@ export default function AdminAssignmentsPage() {
       </Card>
 
       {coverage.isFetching && classId ? (
-        <p className="text-sm text-muted-foreground">Loading coverage…</p>
+        <p className="text-sm text-muted-foreground">Loading coverage...</p>
       ) : null}
 
       {coverage.data ? (
         <>
-          <Card>
+          <Card className="border-indigo-100">
             <CardHeader>
-              <CardTitle>Coverage summary</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardCheck className="size-5 text-indigo-600" />
+                Coverage summary
+              </CardTitle>
               <CardDescription>{coverage.data.scopeNote}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {coverage.data.assignedTeacherIdsNotSubjectTeacherRole.length > 0 ? (
                 <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-                  Some assignments reference users who are not active subject teachers in this school:
-                  {" "}
+                  <span className="inline-flex items-center gap-1 font-medium">
+                    <CircleAlert className="size-4" />
+                    Some assignments reference users who are not active subject teachers:
+                  </span>{" "}
                   {coverage.data.assignedTeacherIdsNotSubjectTeacherRole.join(", ")}
                 </p>
               ) : null}
               <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <h3 className="mb-2 text-sm font-medium">Assigned in this scope</h3>
+                <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-3">
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-700">
+                    <UserCheck2 className="size-4" />
+                    Assigned in this scope
+                  </h3>
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     {coverage.data.assignedSubjectTeachers.map((t) => (
                       <li key={t.id}>
-                        {t.firstName} {t.lastName} — {t.email}
+                        {t.firstName} {t.lastName} - {t.email}
                       </li>
                     ))}
                     {coverage.data.assignedSubjectTeachers.length === 0 ? (
@@ -161,12 +201,15 @@ export default function AdminAssignmentsPage() {
                     ) : null}
                   </ul>
                 </div>
-                <div>
-                  <h3 className="mb-2 text-sm font-medium">Subject teachers not assigned</h3>
+                <div className="rounded-xl border border-sky-200/70 bg-sky-50/60 p-3">
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-medium text-sky-700">
+                    <UserMinus2 className="size-4" />
+                    Subject teachers not assigned
+                  </h3>
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     {coverage.data.unassignedSubjectTeachers.map((t) => (
                       <li key={t.id}>
-                        {t.firstName} {t.lastName} — {t.email}
+                        {t.firstName} {t.lastName} - {t.email}
                       </li>
                     ))}
                     {coverage.data.unassignedSubjectTeachers.length === 0 ? (
@@ -178,9 +221,12 @@ export default function AdminAssignmentsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-indigo-100">
             <CardHeader>
-              <CardTitle>Assign teacher</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus2 className="size-5 text-indigo-600" />
+                Assign teacher
+              </CardTitle>
               <CardDescription>
                 Creates an active teaching assignment for the selected class.
               </CardDescription>
@@ -192,7 +238,7 @@ export default function AdminAssignmentsPage() {
                   value={assignTeacherId || undefined}
                   onValueChange={(v) => setAssignTeacherId(v ?? "")}
                 >
-                  <SelectTrigger className="h-10 w-[240px]">
+                  <SelectTrigger className="h-10 w-[250px]">
                     <SelectValue placeholder="Teacher" />
                   </SelectTrigger>
                   <SelectContent>
@@ -212,7 +258,7 @@ export default function AdminAssignmentsPage() {
                   value={assignSubjectId || undefined}
                   onValueChange={(v) => setAssignSubjectId(v ?? "")}
                 >
-                  <SelectTrigger className="h-10 w-[200px]">
+                  <SelectTrigger className="h-10 w-[220px]">
                     <SelectValue placeholder="Subject" />
                   </SelectTrigger>
                   <SelectContent>
@@ -232,7 +278,7 @@ export default function AdminAssignmentsPage() {
                   value={assignTermId || undefined}
                   onValueChange={(v) => setAssignTermId(v ?? "")}
                 >
-                  <SelectTrigger className="h-10 w-[200px]">
+                  <SelectTrigger className="h-10 w-[220px]">
                     <SelectValue placeholder="Term" />
                   </SelectTrigger>
                   <SelectContent>
@@ -247,6 +293,7 @@ export default function AdminAssignmentsPage() {
                 </Select>
               </div>
               <Button
+                className="gap-2 bg-indigo-600 text-white hover:bg-indigo-700"
                 disabled={
                   assign.isPending ||
                   !classId ||
@@ -263,12 +310,13 @@ export default function AdminAssignmentsPage() {
                   });
                 }}
               >
+                <BookUser className="size-4" />
                 Assign
               </Button>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-indigo-100">
             <CardHeader>
               <CardTitle>Active assignments</CardTitle>
               <CardDescription>
@@ -276,51 +324,54 @@ export default function AdminAssignmentsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableCaption>Rows reflect current filters</TableCaption>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Teacher</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Term</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {coverage.data.assignments.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell>
-                        {row.teacher
-                          ? `${row.teacher.firstName} ${row.teacher.lastName}`
-                          : row.teacherUserId}
-                      </TableCell>
-                      <TableCell>
-                        {row.subject ? `${row.subject.name} (${row.subject.code})` : row.subjectId}
-                      </TableCell>
-                      <TableCell>
-                        {row.term ? `${row.term.name} (#${row.term.order})` : row.termId}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={unassign.isPending}
-                          onClick={async () => {
-                            await unassign.mutateAsync({
-                              teacherUserId: row.teacherUserId,
-                              classId: row.classId,
-                              subjectId: row.subjectId,
-                              termId: row.termId,
-                            });
-                          }}
-                        >
-                          Unassign
-                        </Button>
-                      </TableCell>
+              <div className="overflow-hidden rounded-xl border border-indigo-100">
+                <Table>
+                  <TableCaption>Rows reflect current filters</TableCaption>
+                  <TableHeader>
+                    <TableRow className="bg-indigo-50/70">
+                      <TableHead>Teacher</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Term</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {coverage.data.assignments.map((row) => (
+                      <TableRow key={row.id} className="hover:bg-indigo-50/40">
+                        <TableCell>
+                          {row.teacher
+                            ? `${row.teacher.firstName} ${row.teacher.lastName}`
+                            : row.teacherUserId}
+                        </TableCell>
+                        <TableCell>
+                          {row.subject ? `${row.subject.name} (${row.subject.code})` : row.subjectId}
+                        </TableCell>
+                        <TableCell>
+                          {row.term ? `${row.term.name} (#${row.term.order})` : row.termId}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-rose-200 text-rose-700 hover:bg-rose-50"
+                            disabled={unassign.isPending}
+                            onClick={async () => {
+                              await unassign.mutateAsync({
+                                teacherUserId: row.teacherUserId,
+                                classId: row.classId,
+                                subjectId: row.subjectId,
+                                termId: row.termId,
+                              });
+                            }}
+                          >
+                            Unassign
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
               {coverage.data.assignments.length === 0 ? (
                 <p className="mt-2 text-sm text-muted-foreground">No active assignments in this view.</p>
               ) : null}
@@ -328,7 +379,9 @@ export default function AdminAssignmentsPage() {
           </Card>
         </>
       ) : classId ? null : (
-        <p className="text-sm text-muted-foreground">Select a class to view coverage and assignments.</p>
+        <p className="rounded-md border border-indigo-100 bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
+          Select a class to view coverage and assignments.
+        </p>
       )}
     </div>
   );

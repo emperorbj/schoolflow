@@ -4,6 +4,8 @@ import type {
   GetScoreSheetQuery,
   PutScoreSheetPayload,
   ScoreSheetRow,
+  StudentCountsQuery,
+  StudentCountsResponse,
   SubmissionStatusItem,
   SubmissionStatusQuery,
   SubmitScoresPayload,
@@ -55,5 +57,18 @@ export function submitScores(payload: SubmitScoresPayload) {
 export function submissionStatus(params: SubmissionStatusQuery) {
   return apiRequest<SubmissionStatusResponse>(
     `${API_ENDPOINTS.assessments.submissionStatus}${statusQuery(params)}`,
+  );
+}
+
+export function getStudentCounts(params: StudentCountsQuery) {
+  const query = new URLSearchParams({
+    subjectId: params.subjectId,
+    termId: params.termId,
+  });
+  if (params.classId) {
+    query.set("classId", params.classId);
+  }
+  return apiRequest<StudentCountsResponse>(
+    `${API_ENDPOINTS.assessments.studentCounts}?${query.toString()}`,
   );
 }

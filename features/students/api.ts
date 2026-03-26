@@ -4,6 +4,7 @@ import type {
   CreateStudentPayload,
   ListStudentsQuery,
   Student,
+  StudentMyResultsResponse,
   UpdateStudentPayload,
 } from "@/types/students";
 
@@ -38,4 +39,17 @@ export function updateStudent(id: string, payload: UpdateStudentPayload) {
     method: "PATCH",
     body: payload,
   });
+}
+
+export function deleteStudent(id: string) {
+  return apiRequest<void>(API_ENDPOINTS.students.byId(id), {
+    method: "DELETE",
+  });
+}
+
+export function getStudentMeResults(termId: string) {
+  const q = new URLSearchParams({ termId });
+  return apiRequest<StudentMyResultsResponse>(
+    `${API_ENDPOINTS.students.meResults}?${q.toString()}`,
+  );
 }

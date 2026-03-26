@@ -8,6 +8,7 @@ export type AppRoute =
   | "/class-results"
   | "/headteacher"
   | "/principal"
+  | "/results"
   | "/materials"
   | "/notifications";
 
@@ -19,6 +20,7 @@ const routeAccess: Record<AppRoute, UserRole[]> = {
     "CLASS_TEACHER",
     "HEADTEACHER",
     "PRINCIPAL",
+    "STUDENT",
   ],
   "/admin": ["SUPER_ADMIN", "ADMIN"],
   "/students": ["SUPER_ADMIN", "ADMIN", "CLASS_TEACHER", "HEADTEACHER", "PRINCIPAL"],
@@ -26,6 +28,7 @@ const routeAccess: Record<AppRoute, UserRole[]> = {
   "/class-results": ["CLASS_TEACHER", "HEADTEACHER", "PRINCIPAL", "ADMIN", "SUPER_ADMIN"],
   "/headteacher": ["HEADTEACHER", "PRINCIPAL", "ADMIN", "SUPER_ADMIN"],
   "/principal": ["PRINCIPAL", "SUPER_ADMIN"],
+  "/results": ["STUDENT"],
   "/materials": [
     "SUPER_ADMIN",
     "ADMIN",
@@ -33,6 +36,7 @@ const routeAccess: Record<AppRoute, UserRole[]> = {
     "CLASS_TEACHER",
     "HEADTEACHER",
     "PRINCIPAL",
+    "STUDENT",
   ],
   "/notifications": ["ADMIN", "SUPER_ADMIN", "HEADTEACHER", "PRINCIPAL"],
 };

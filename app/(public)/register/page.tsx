@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRegisterMutation } from "@/features/auth/hooks";
 import { ApiError } from "@/lib/api/client";
+import { Mail } from "lucide-react";
 
 const registerSchema = z.object({
   schoolName: z.string().trim().min(1, "School name is required"),
@@ -74,7 +75,10 @@ export default function RegisterPage() {
                 <Input id="schoolName" {...register("schoolName")} />
               </Field>
               <Field label="Email" id="email" error={errors.email?.message}>
-                <Input id="email" type="email" {...register("email")} />
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="email" className="pl-10" type="email" {...register("email")} />
+                </div>
               </Field>
               <Field label="First name" id="firstName" error={errors.firstName?.message}>
                 <Input id="firstName" {...register("firstName")} />
@@ -105,7 +109,11 @@ export default function RegisterPage() {
               <p className="text-sm text-destructive">{errorMessage}</p>
             ) : null}
 
-            <Button className="w-full" type="submit" disabled={registerMutation.isPending}>
+            <Button
+              className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
+              type="submit"
+              disabled={registerMutation.isPending}
+            >
               {registerMutation.isPending ? "Creating account..." : "Create super admin"}
             </Button>
 

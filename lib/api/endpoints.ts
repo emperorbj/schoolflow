@@ -18,10 +18,12 @@ export const API_ENDPOINTS = {
   students: {
     list: "/api/v1/students",
     byId: (id: string) => `/api/v1/students/${id}`,
+    meResults: "/api/v1/students/me/results",
   },
   assessments: {
     teachingContexts: "/api/v1/teaching-contexts",
     scoreSheets: "/api/v1/score-sheets",
+    studentCounts: "/api/v1/student-counts",
     submissions: "/api/v1/submissions",
     submissionStatus: "/api/v1/submissions/status",
   },

@@ -3,17 +3,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/features/admin/api";
 
-export function useSessionsQuery() {
+export function useSessionsQuery(enabled = true) {
   return useQuery({
     queryKey: ["admin", "sessions"],
     queryFn: api.listSessions,
+    enabled,
   });
 }
 
-export function useUsersQuery() {
+export function useUsersQuery(enabled = true) {
   return useQuery({
     queryKey: ["admin", "users"],
     queryFn: api.listUsers,
+    enabled,
   });
 }
 
@@ -89,10 +91,11 @@ export function useDeleteSessionMutation() {
   });
 }
 
-export function useTermsQuery(sessionId?: string) {
+export function useTermsQuery(sessionId?: string, enabled = true) {
   return useQuery({
     queryKey: ["admin", "terms", sessionId ?? "all"],
     queryFn: () => api.listTerms(sessionId),
+    enabled,
   });
 }
 
@@ -117,10 +120,11 @@ export function useUpdateTermMutation() {
   });
 }
 
-export function useClassesQuery() {
+export function useClassesQuery(enabled = true) {
   return useQuery({
     queryKey: ["admin", "classes"],
     queryFn: api.listClasses,
+    enabled,
   });
 }
 
@@ -155,10 +159,11 @@ export function useDeleteClassMutation() {
   });
 }
 
-export function useSubjectsQuery() {
+export function useSubjectsQuery(enabled = true) {
   return useQuery({
     queryKey: ["admin", "subjects"],
     queryFn: api.listSubjects,
+    enabled,
   });
 }
 
@@ -193,11 +198,11 @@ export function useDeleteSubjectMutation() {
   });
 }
 
-export function useClassCoverageQuery(classId?: string, termId?: string) {
+export function useClassCoverageQuery(classId?: string, termId?: string, enabled = true) {
   return useQuery({
     queryKey: ["admin", "classCoverage", classId ?? "", termId ?? "all"],
     queryFn: () => api.getClassCoverage(classId as string, termId),
-    enabled: Boolean(classId),
+    enabled: enabled && Boolean(classId),
   });
 }
 

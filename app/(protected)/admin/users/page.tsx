@@ -42,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
+import { Mail } from "lucide-react";
 import type { SchoolUser, SchoolUserRole, UpdateUserPayload } from "@/types/admin";
 
 function errorText(error: unknown) {
@@ -66,6 +67,26 @@ const EDIT_ROLES: SchoolUserRole[] = [
   "STUDENT",
   "PARENT",
 ];
+
+function rolePillClass(role: SchoolUserRole) {
+  switch (role) {
+    case "ADMIN":
+    case "SUPER_ADMIN":
+      return "bg-indigo-100 text-indigo-700 border-indigo-200";
+    case "SUBJECT_TEACHER":
+    case "CLASS_TEACHER":
+      return "bg-sky-100 text-sky-700 border-sky-200";
+    case "HEADTEACHER":
+    case "PRINCIPAL":
+      return "bg-violet-100 text-violet-700 border-violet-200";
+    case "STUDENT":
+      return "bg-emerald-100 text-emerald-700 border-emerald-200";
+    case "PARENT":
+      return "bg-amber-100 text-amber-700 border-amber-200";
+    default:
+      return "bg-muted text-muted-foreground border-border";
+  }
+}
 
 export default function AdminUsersPage() {
   const users = useUsersQuery();
@@ -114,7 +135,7 @@ export default function AdminUsersPage() {
               Register user
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent className="sm:max-w-xl">
+          <AlertDialogContent className="sm:max-w-xl border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-indigo-50">
             <AlertDialogHeader>
               <AlertDialogTitle>Register new user</AlertDialogTitle>
               <AlertDialogDescription>
@@ -125,20 +146,23 @@ export default function AdminUsersPage() {
             <div className="grid gap-2 md:grid-cols-2">
               <Input value={firstName} placeholder="First name" onChange={(e) => setFirstName(e.target.value)} />
               <Input value={lastName} placeholder="Last name" onChange={(e) => setLastName(e.target.value)} />
-              <Input
-                className="md:col-span-2"
-                value={email}
-                type="email"
-                placeholder="Email"
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <div className="relative md:col-span-2">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-10"
+                  value={email}
+                  type="email"
+                  placeholder="Email"
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
               <div className="md:col-span-2 flex flex-col gap-2 sm:flex-row sm:items-stretch">
                 <div className="relative min-w-0 flex-1">
                   <Input
                     value={password}
                     type={showRegisterPassword ? "text" : "password"}
                     autoComplete="new-password"
-                    className="pr-10"
+                    className="pr-11"
                     placeholder="Password (min 8 chars)"
                     onChange={(e) => setPassword(e.target.value)}
                   />
@@ -146,7 +170,7 @@ export default function AdminUsersPage() {
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="absolute right-0.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-0.5 top-1/2 z-10 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     title={showRegisterPassword ? "Hide password" : "Show password"}
                     aria-label={showRegisterPassword ? "Hide password" : "Show password"}
                     onClick={() => setShowRegisterPassword((v) => !v)}
@@ -193,6 +217,7 @@ export default function AdminUsersPage() {
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
+                className="bg-indigo-600 text-white hover:bg-indigo-700"
                 disabled={
                   createUser.isPending ||
                   !firstName.trim() ||
@@ -223,10 +248,11 @@ export default function AdminUsersPage() {
         </AlertDialog>
       </div>
 
+      <div className="overflow-hidden rounded-xl border border-indigo-100 bg-white shadow-sm">
       <Table>
         <TableCaption>Users in current school</TableCaption>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-indigo-50/70">
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
@@ -238,17 +264,31 @@ export default function AdminUsersPage() {
         </TableHeader>
         <TableBody>
           {(users.data?.users ?? []).map((user) => (
-            <TableRow key={user.id}>
+            <TableRow key={user.id} className="hover:bg-indigo-50/40">
               <TableCell>{user.firstName} {user.lastName}</TableCell>
               <TableCell>{user.email}</TableCell>
-              <TableCell>{user.role}</TableCell>
+              <TableCell>
+                <span className={`inline-flex rounded-md border px-2 py-1 text-xs font-medium ${rolePillClass(user.role)}`}>
+                  {user.role}
+                </span>
+              </TableCell>
               <TableCell>
                 <CopyableId value={user.id} />
               </TableCell>
               <TableCell>
                 <CopyableId value={user.schoolId} />
               </TableCell>
-              <TableCell>{user.isActive ? "Active" : "Disabled"}</TableCell>
+              <TableCell>
+                <span
+                  className={`inline-flex rounded-md border px-2 py-1 text-xs font-medium ${
+                    user.isActive
+                      ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+                      : "border-rose-200 bg-rose-100 text-rose-700"
+                  }`}
+                >
+                  {user.isActive ? "Active" : "Disabled"}
+                </span>
+              </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-1">
                   <Button
@@ -334,6 +374,7 @@ export default function AdminUsersPage() {
           ))}
         </TableBody>
       </Table>
+      </div>
 
       <AlertDialog
         open={!!editingUser}
@@ -429,7 +470,10 @@ function EditUserForm({
       <div className="grid gap-2 md:grid-cols-2">
         <Input value={firstName} placeholder="First name" onChange={(e) => setFirstName(e.target.value)} />
         <Input value={lastName} placeholder="Last name" onChange={(e) => setLastName(e.target.value)} />
-        <Input className="md:col-span-2" value={email} type="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
+        <div className="relative md:col-span-2">
+          <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-10" value={email} type="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
+        </div>
         <div className="md:col-span-2">
           <Select value={role} onValueChange={(value) => setRole(value as SchoolUserRole)}>
             <SelectTrigger className="h-10 w-full">

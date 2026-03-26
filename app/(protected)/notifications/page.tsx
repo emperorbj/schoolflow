@@ -10,6 +10,7 @@ import { ApiError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Mail } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -72,11 +73,15 @@ export default function NotificationsPage() {
               </SelectGroup>
             </SelectContent>
           </Select>
-          <Input
-            value={recipientsCsv}
-            placeholder="parent1@mail.com,parent2@mail.com"
-            onChange={(e) => setRecipientsCsv(e.target.value)}
-          />
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-10"
+              value={recipientsCsv}
+              placeholder="parent1@mail.com,parent2@mail.com"
+              onChange={(e) => setRecipientsCsv(e.target.value)}
+            />
+          </div>
         </CardContent>
       </Card>
 

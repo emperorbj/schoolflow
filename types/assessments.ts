@@ -51,6 +51,26 @@ export type SubmissionStatusQuery = {
   termId: string;
 };
 
+export type StudentCountsQuery = {
+  subjectId: string;
+  termId: string;
+  classId?: string;
+};
+
+export type StudentCountsByClassRow = {
+  classId: string;
+  className: string;
+  classArm: string | null;
+  totalStudents: number;
+};
+
+export type StudentCountsResponse = {
+  subjectId: string;
+  termId: string;
+  classes: StudentCountsByClassRow[];
+  totalStudents: number;
+};
+
 export type SubmissionStatusItem = {
   subjectId: string;
   total: number;

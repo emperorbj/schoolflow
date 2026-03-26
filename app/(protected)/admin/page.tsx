@@ -23,7 +23,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -42,6 +41,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  BookUser,
+  CheckCircle2,
+  Circle,
+  Plus,
+  Save,
+  Users,
+} from "lucide-react";
 import { FiTrash2 } from "react-icons/fi";
 
 /** e.g. "2026/2027 Academic Session" */
@@ -140,33 +147,47 @@ export default function AdminPage() {
       {topError ? <p className="text-sm text-destructive">{topError}</p> : null}
       {isLoadingAny ? <p className="text-sm text-muted-foreground">Loading admin data...</p> : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Users table</CardTitle>
-          <CardDescription>
-            Open the dedicated users table with copyable IDs and detail dialog.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild>
-            <Link href="/admin/users">Open users table</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <section className="grid gap-4 md:grid-cols-2">
+        <Card className="border-indigo-200/80 bg-gradient-to-br from-indigo-50 to-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="size-5 text-indigo-600" />
+              Users table
+            </CardTitle>
+            <CardDescription>
+              Open the dedicated users table with copyable IDs and detail dialog.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="gap-2">
+              <Link href="/admin/users">
+                <Users className="size-4" />
+                Open users table
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Teacher–subject assignments</CardTitle>
-          <CardDescription>
-            Assign subject teachers to classes, review coverage by term, and unassign.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild>
-            <Link href="/admin/assignments">Open assignments</Link>
-          </Button>
-        </CardContent>
-      </Card>
+        <Card className="border-sky-200/80 bg-gradient-to-br from-sky-50 to-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookUser className="size-5 text-sky-600" />
+              Teacher–subject assignments
+            </CardTitle>
+            <CardDescription>
+              Assign subject teachers to classes, review coverage by term, and unassign.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="gap-2">
+              <Link href="/admin/assignments">
+                <BookUser className="size-4" />
+                Open assignments
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
 
       <section className="grid gap-6 xl:grid-cols-2">
         <Card>
@@ -191,12 +212,14 @@ export default function AdminPage() {
                 </SelectContent>
               </Select>
               <Button
+                className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700"
                 disabled={createSession.isPending || !sessionSelect}
                 onClick={async () => {
                   await createSession.mutateAsync({ name: sessionSelect });
                   setSessionSelect("");
                 }}
               >
+                <Plus className="size-4" />
                 Add
               </Button>
             </div>
@@ -252,6 +275,7 @@ export default function AdminPage() {
                 </SelectContent>
               </Select>
               <Button
+                className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700"
                 disabled={createTerm.isPending || !termSessionId || !termSelect}
                 onClick={async () => {
                   const picked = TERM_SELECT_OPTIONS.find((t) => t.name === termSelect);
@@ -266,6 +290,7 @@ export default function AdminPage() {
                   setTermSelect("");
                 }}
               >
+                <Plus className="size-4" />
                 Add
               </Button>
             </div>
@@ -320,6 +345,7 @@ export default function AdminPage() {
                 </SelectContent>
               </Select>
               <Button
+                className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700"
                 disabled={createClass.isPending || !classLevel || !classArmSelect}
                 onClick={async () => {
                   await createClass.mutateAsync({ name: classLevel, arm: classArmSelect });
@@ -327,6 +353,7 @@ export default function AdminPage() {
                   setClassArmSelect("");
                 }}
               >
+                <Plus className="size-4" />
                 Add
               </Button>
             </div>
@@ -357,6 +384,7 @@ export default function AdminPage() {
               <Input value={subjectName} placeholder="Mathematics" onChange={(e) => setSubjectName(e.target.value)} />
               <Input value={subjectCode} placeholder="MTH" onChange={(e) => setSubjectCode(e.target.value)} />
               <Button
+                className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700"
                 disabled={createSubject.isPending || subjectName.trim().length < 2 || subjectCode.trim().length < 2}
                 onClick={async () => {
                   await createSubject.mutateAsync({
@@ -367,6 +395,7 @@ export default function AdminPage() {
                   setSubjectCode("");
                 }}
               >
+                <Plus className="size-4" />
                 Add
               </Button>
             </div>
@@ -435,12 +464,10 @@ function SessionRow({
           </SelectGroup>
         </SelectContent>
       </Select>
-      <Label className="flex items-center gap-2">
-        <input checked={active} type="checkbox" onChange={(e) => setActive(e.target.checked)} />
-        Active
-      </Label>
+      <ActiveToggle active={active} onChange={setActive} />
       <Button
         size="sm"
+        className="gap-1.5"
         disabled={pending || value.trim().length < 3}
         onClick={async () => {
           setPending(true);
@@ -448,6 +475,7 @@ function SessionRow({
           setPending(false);
         }}
       >
+        <Save className="size-4" />
         Save
       </Button>
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -543,12 +571,10 @@ function TermRow({
         </SelectContent>
       </Select>
       <span className="text-sm tabular-nums text-muted-foreground">Order {sortOrder}</span>
-      <Label className="flex items-center gap-2">
-        <input checked={active} type="checkbox" onChange={(e) => setActive(e.target.checked)} />
-        Active
-      </Label>
+      <ActiveToggle active={active} onChange={setActive} />
       <Button
         size="sm"
+        className="gap-1.5"
         disabled={pending || value.trim().length < 3}
         onClick={async () => {
           setPending(true);
@@ -556,6 +582,7 @@ function TermRow({
           setPending(false);
         }}
       >
+        <Save className="size-4" />
         Save
       </Button>
       <input type="hidden" value={id} />
@@ -632,12 +659,10 @@ function ClassRow({
           </SelectGroup>
         </SelectContent>
       </Select>
-      <Label className="flex items-center gap-2">
-        <input checked={active} type="checkbox" onChange={(e) => setActive(e.target.checked)} />
-        Active
-      </Label>
+      <ActiveToggle active={active} onChange={setActive} />
       <Button
         size="sm"
+        className="gap-1.5"
         disabled={pending || !nameValue.trim() || !armValue.trim()}
         onClick={async () => {
           setPending(true);
@@ -649,6 +674,7 @@ function ClassRow({
           setPending(false);
         }}
       >
+        <Save className="size-4" />
         Save
       </Button>
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -718,12 +744,10 @@ function SubjectRow({
     <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
       <Input className="min-w-[120px] flex-1" value={nameValue} onChange={(e) => setNameValue(e.target.value)} />
       <Input className="w-28" value={codeValue} onChange={(e) => setCodeValue(e.target.value)} />
-      <Label className="flex items-center gap-2">
-        <input checked={active} type="checkbox" onChange={(e) => setActive(e.target.checked)} />
-        Active
-      </Label>
+      <ActiveToggle active={active} onChange={setActive} />
       <Button
         size="sm"
+        className="gap-1.5"
         disabled={pending || nameValue.trim().length < 2 || codeValue.trim().length < 2}
         onClick={async () => {
           setPending(true);
@@ -735,6 +759,7 @@ function SubjectRow({
           setPending(false);
         }}
       >
+        <Save className="size-4" />
         Save
       </Button>
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -774,5 +799,28 @@ function SubjectRow({
       </AlertDialog>
       <input type="hidden" value={id} />
     </div>
+  );
+}
+
+function ActiveToggle({
+  active,
+  onChange,
+}: {
+  active: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      className={`gap-1.5 border ${active ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "text-muted-foreground"}`}
+      onClick={() => onChange(!active)}
+      aria-pressed={active}
+      title={active ? "Set inactive" : "Set active"}
+    >
+      {active ? <CheckCircle2 className="size-4" /> : <Circle className="size-4" />}
+      {active ? "Active" : "Inactive"}
+    </Button>
   );
 }

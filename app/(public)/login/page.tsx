@@ -6,18 +6,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLoginMutation } from "@/features/auth/hooks";
 import { ApiError } from "@/lib/api/client";
+import { Mail } from "lucide-react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
 const loginSchema = z.object({
@@ -54,88 +48,118 @@ export default function LoginPage() {
       : "Unable to sign in. Please try again.";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-muted/50 px-4 py-10">
-      <div className="grid w-full max-w-5xl gap-8 lg:grid-cols-[1.2fr_1fr]">
-        <section className="hidden rounded-2xl border bg-background/60 p-8 backdrop-blur lg:block">
-          <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            Schoolflow
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold leading-tight">
-            Fast, clear school operations for every role.
-          </h1>
-          <p className="mt-4 max-w-xl text-muted-foreground">
-            Manage students, assessments, class results, leadership analytics,
-            materials, and notifications in one modern workspace.
-          </p>
-        </section>
-
-        <Card className="border bg-background/95 shadow-xl">
-          <CardHeader>
-            <CardTitle>Welcome back</CardTitle>
-            <CardDescription>Sign in to access your dashboard</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="user@example.com"
-                  {...register("email")}
-                />
-                {errors.email ? (
-                  <p className="text-sm text-destructive">{errors.email.message}</p>
-                ) : null}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    className="pr-10"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    {...register("password")}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="absolute right-0.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    onClick={() => setShowPassword((value) => !value)}
-                    title={showPassword ? "Hide password" : "Show password"}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? (
-                      <FiEyeOff className="size-4" aria-hidden />
-                    ) : (
-                      <FiEye className="size-4" aria-hidden />
-                    )}
-                  </Button>
-                </div>
-                {errors.password ? (
-                  <p className="text-sm text-destructive">{errors.password.message}</p>
-                ) : null}
-              </div>
-
-              {loginMutation.isError ? (
-                <p className="text-sm text-destructive">{errorMessage}</p>
-              ) : null}
-
-              <Button className="w-full" type="submit" disabled={loginMutation.isPending}>
-                {loginMutation.isPending ? "Signing in..." : "Sign in"}
-              </Button>
-              <p className="text-center text-sm text-muted-foreground">
-                Need to bootstrap a new school?{" "}
-                <Link href="/register" className="text-foreground underline underline-offset-4">
-                  Register
-                </Link>
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4 md:p-8">
+      <div className="w-full max-w-6xl overflow-hidden rounded-3xl border bg-background shadow-2xl">
+        <div className="grid min-h-[640px] grid-cols-1 lg:grid-cols-[1.05fr_1fr]">
+          <section className="relative hidden p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-between">
+            <div className="absolute inset-0 bg-indigo-600" />
+            <div className="relative z-10">
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary-foreground/90">
+                Schoolflow
               </p>
-            </form>
-          </CardContent>
-        </Card>
+              <h1 className="mt-10 text-5xl font-semibold leading-tight">
+                Fast, clear school operations for every role.
+              </h1>
+              <p className="mt-6 max-w-lg text-lg text-primary-foreground/90">
+                Manage students, assessments, class results, leadership analytics, materials, and
+                notifications in one modern workspace.
+              </p>
+            </div>
+            <div className="relative z-10 flex items-center justify-between gap-3 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex size-11 items-center justify-center rounded-full bg-white/20 text-sm font-semibold">
+                  HV
+                </div>
+                <div>
+                  <p className="text-sm font-semibold leading-none">Dr. Helena Vance</p>
+                  <p className="mt-1 text-xs text-primary-foreground/85">Dean of Administration</p>
+                </div>
+              </div>
+              <span className="text-xl leading-none text-primary-foreground/80">&rdquo;</span>
+            </div>
+          </section>
+
+          <section className="flex flex-col justify-center p-6 sm:p-10 lg:p-12">
+            <div className="mx-auto w-full max-w-md">
+              <div>
+                <h2 className="text-3xl font-semibold tracking-tight">Welcome Back</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Please enter your details to sign in.
+                </p>
+              </div>
+
+              <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      className="pl-10"
+                      type="email"
+                      placeholder="name@school.edu"
+                      autoComplete="email"
+                      {...register("email")}
+                    />
+                  </div>
+                  {errors.email ? (
+                    <p className="text-sm text-destructive">{errors.email.message}</p>
+                  ) : null}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      className="pr-11"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      {...register("password")}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="absolute right-0.5 top-1/2 z-10 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowPassword((value) => !value)}
+                      title={showPassword ? "Hide password" : "Show password"}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <FiEyeOff className="size-4" aria-hidden />
+                      ) : (
+                        <FiEye className="size-4" aria-hidden />
+                      )}
+                    </Button>
+                  </div>
+                  {errors.password ? (
+                    <p className="text-sm text-destructive">{errors.password.message}</p>
+                  ) : null}
+                </div>
+
+                {loginMutation.isError ? (
+                  <p className="text-sm text-destructive">{errorMessage}</p>
+                ) : null}
+
+                <Button
+                  className="mt-2 w-full py-4 shadow-md bg-indigo-600 text-white hover:bg-indigo-700"
+                  type="submit"
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending ? "Signing in..." : "Sign In to Portal"}
+                </Button>
+
+                <p className="text-center text-sm text-muted-foreground">
+                  Need to bootstrap a new school?{" "}
+                  <Link href="/register" className="font-medium text-foreground underline underline-offset-4">
+                    Register
+                  </Link>
+                </p>
+              </form>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

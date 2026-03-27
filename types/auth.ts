@@ -9,12 +9,23 @@ export const USER_ROLES = [
 
 export type UserRole = (typeof USER_ROLES)[number];
 
+export type CurrentUserPermissions = {
+  schoolId: string;
+  role: string;
+  isClassTeacher: boolean;
+  canViewAllClasses: boolean;
+  hasTeachingAssignments?: boolean;
+  activeTeachingAssignments?: number;
+  canUseAssessments?: boolean;
+};
+
 export type CurrentUser = {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
   role: UserRole;
+  permissions?: CurrentUserPermissions;
 };
 
 export type LoginPayload = {

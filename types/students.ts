@@ -2,9 +2,12 @@ export type Student = {
   _id: string;
   firstName: string;
   lastName: string;
+  gender?: "MALE" | "FEMALE";
   admissionNumber: string;
   classId: string;
   isActive: boolean;
+  /** From GET /students: true when a STUDENT user is linked to this record (`User.studentId`). */
+  hasPortalAccount: boolean;
 };
 
 export type ListStudentsQuery = {
@@ -15,6 +18,7 @@ export type ListStudentsQuery = {
 export type CreateStudentPayload = {
   firstName: string;
   lastName: string;
+  gender: "MALE" | "FEMALE";
   admissionNumber: string;
   classId: string;
   /** Optional: create STUDENT user + welcome email; must be sent together with loginPassword */
@@ -59,7 +63,14 @@ export type StudentMyResultsResponse = {
 export type UpdateStudentPayload = {
   firstName?: string;
   lastName?: string;
+  gender?: "MALE" | "FEMALE";
   admissionNumber?: string;
   classId?: string;
   isActive?: boolean;
+};
+
+/** Backend: POST /api/v1/students/:id/portal — create login and link to student. */
+export type CreateStudentPortalPayload = {
+  loginEmail: string;
+  loginPassword: string;
 };

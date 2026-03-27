@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
-import { CheckCircle2, FilterX, GraduationCap, Hash, Mail, Plus, Save, Search, Users } from "lucide-react";
+import { CheckCircle2, FilterX, GraduationCap, Hash, KeyRound, Mail, Plus, Save, Search, Users } from "lucide-react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useClassesQuery } from "@/features/admin/hooks";
+import { useCurrentUserQuery } from "@/features/auth/hooks";
 import {
   useCreateStudentMutation,
+  useCreateStudentPortalMutation,
   useDeleteStudentMutation,
   useStudentsQuery,
   useUpdateStudentMutation,
@@ -42,7 +44,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { CreateStudentPayload, Student, UpdateStudentPayload } from "@/types/students";
+import type { CreateStudentPayload, CreateStudentPortalPayload, Student, UpdateStudentPayload } from "@/types/students";
 
 const ALL_CLASSES_VALUE = "__all_classes__";
 
@@ -59,6 +61,15 @@ function generatePassword(length = 14) {
 }
 
 export default function StudentsPage() {
+  const me = useCurrentUserQuery();
+  const role = me.data?.role;
+  const isClassTeacher = role === "CLASS_TEACHER";
+  const canCreateStudentPortal =
+    role === "SUPER_ADMIN" ||
+    role === "ADMIN" ||
+    role === "HEADTEACHER" ||
+    role === "PRINCIPAL";
+
   const [q, setQ] = useState("");
   const [classId, setClassId] = useState("");
   const classesQuery = useClassesQuery();
@@ -68,28 +79,36 @@ export default function StudentsPage() {
   });
 
   const createStudent = useCreateStudentMutation();
+  const createStudentPortal = useCreateStudentPortalMutation();
   const updateStudent = useUpdateStudentMutation();
   const deleteStudent = useDeleteStudentMutation();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [gender, setGender] = useState<"" | "MALE" | "FEMALE">("");
   const [admissionNumber, setAdmissionNumber] = useState("");
   const [createClassId, setCreateClassId] = useState("");
+  /** Bumps after successful create so the class Select remounts (Radix can keep stale label when value clears). */
+  const [createClassSelectKey, setCreateClassSelectKey] = useState(0);
   const [createPortalAccount, setCreatePortalAccount] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showPortalPassword, setShowPortalPassword] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
+  const [portalStudent, setPortalStudent] = useState<Student | null>(null);
 
   const classes = classesQuery.data?.classes ?? [];
   const students = studentsQuery.data?.students ?? [];
   const topError =
     studentsQuery.error ??
     classesQuery.error ??
-    createStudent.error ??
-    updateStudent.error ??
-    deleteStudent.error;
+    (isClassTeacher
+      ? null
+      : createStudent.error ??
+        createStudentPortal.error ??
+        updateStudent.error ??
+        deleteStudent.error);
   const classOptions = classes.map((c) => ({
     id: c._id,
     label: `${c.name} ${c.arm}`,
@@ -99,9 +118,11 @@ export default function StudentsPage() {
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border-0 bg-gradient-to-r from-primary/15 via-primary/5 to-background p-5 shadow-sm">
-        <h1 className="text-2xl font-semibold">Students</h1>
+        <h1 className="text-2xl font-semibold">{isClassTeacher ? "My class students" : "Students"}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Search, filter, create, and update student records.
+          {isClassTeacher
+            ? "Read-only list of students in your assigned class."
+            : "Search, filter, create, and update student records."}
         </p>
       </div>
 
@@ -111,6 +132,7 @@ export default function StudentsPage() {
         </div>
       ) : null}
 
+      {!isClassTeacher ? (
       <Card className="border-indigo-200/70 bg-gradient-to-br from-indigo-50 via-white to-indigo-50 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -122,7 +144,7 @@ export default function StudentsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-5">
             <Input
               className="bg-white"
               value={firstName}
@@ -144,7 +166,22 @@ export default function StudentsPage() {
                 onChange={(e) => setAdmissionNumber(e.target.value)}
               />
             </div>
-            <Select value={createClassId || undefined} onValueChange={setCreateClassId}>
+            <Select value={gender || undefined} onValueChange={(value) => setGender(value as "MALE" | "FEMALE")}>
+              <SelectTrigger className="h-10 w-full bg-white">
+                <SelectValue placeholder="Gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="MALE">Male</SelectItem>
+                  <SelectItem value="FEMALE">Female</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Select
+              key={createClassSelectKey}
+              value={createClassId || undefined}
+              onValueChange={setCreateClassId}
+            >
               <SelectTrigger className="h-10 w-full bg-white">
                 <SelectValue placeholder="Class" />
               </SelectTrigger>
@@ -240,6 +277,7 @@ export default function StudentsPage() {
               createStudent.isPending ||
               !firstName.trim() ||
               !lastName.trim() ||
+              !gender ||
               !admissionNumber.trim() ||
               !createClassId ||
               (createPortalAccount &&
@@ -251,6 +289,7 @@ export default function StudentsPage() {
               const payload: CreateStudentPayload = {
                 firstName: firstName.trim(),
                 lastName: lastName.trim(),
+                gender,
                 admissionNumber: admissionNumber.trim(),
                 classId: createClassId,
               };
@@ -261,7 +300,10 @@ export default function StudentsPage() {
               await createStudent.mutateAsync(payload);
               setFirstName("");
               setLastName("");
+              setGender("");
               setAdmissionNumber("");
+              setCreateClassId("");
+              setCreateClassSelectKey((k) => k + 1);
               setCreatePortalAccount(false);
               setLoginEmail("");
               setLoginPassword("");
@@ -273,17 +315,22 @@ export default function StudentsPage() {
           </Button>
         </CardContent>
       </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="size-5 text-indigo-600" />
-            Student records
+            {isClassTeacher ? "My class students" : "Student records"}
           </CardTitle>
-          <CardDescription>Filter by class or search by name/admission number.</CardDescription>
+          <CardDescription>
+            {isClassTeacher
+              ? "View students in your assigned class."
+              : "Filter by class or search by name/admission number."}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-2 md:grid-cols-3">
+          <div className={`grid gap-2 ${isClassTeacher ? "md:grid-cols-1" : "md:grid-cols-3"}`}>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -293,6 +340,8 @@ export default function StudentsPage() {
                 onChange={(e) => setQ(e.target.value)}
               />
             </div>
+            {!isClassTeacher ? (
+            <>
             <Select
               value={classId ? classId : ALL_CLASSES_VALUE}
               onValueChange={(value) => {
@@ -317,6 +366,8 @@ export default function StudentsPage() {
               <FilterX className="size-4" />
               Clear filters
             </Button>
+            </>
+            ) : null}
           </div>
 
           <div className="overflow-hidden rounded-xl border border-indigo-100 bg-white shadow-sm">
@@ -326,16 +377,19 @@ export default function StudentsPage() {
                 <TableRow className="bg-indigo-50/70">
                   <TableHead>First name</TableHead>
                   <TableHead>Last name</TableHead>
+                  <TableHead>Gender</TableHead>
                   <TableHead>Admission no.</TableHead>
                   <TableHead>Class</TableHead>
                   <TableHead>Status</TableHead>
+                  {!isClassTeacher ? (
                   <TableHead className="text-right">Actions</TableHead>
+                  ) : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {studentsQuery.isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-6 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={isClassTeacher ? 6 : 7} className="py-6 text-center text-sm text-muted-foreground">
                       Loading students...
                     </TableCell>
                   </TableRow>
@@ -344,6 +398,7 @@ export default function StudentsPage() {
                     <TableRow key={student._id} className="hover:bg-indigo-50/40">
                       <TableCell className="font-medium">{student.firstName}</TableCell>
                       <TableCell>{student.lastName}</TableCell>
+                      <TableCell>{student.gender ?? "-"}</TableCell>
                       <TableCell>{student.admissionNumber}</TableCell>
                       <TableCell>{classLabelById.get(student.classId) ?? student.classId}</TableCell>
                       <TableCell>
@@ -358,8 +413,20 @@ export default function StudentsPage() {
                           {student.isActive ? "Active" : "Inactive"}
                         </span>
                       </TableCell>
+                      {!isClassTeacher ? (
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {canCreateStudentPortal && !student.hasPortalAccount ? (
+                            <Button
+                              size="icon-sm"
+                              variant="outline"
+                              className="border-amber-200 text-amber-800 hover:bg-amber-50"
+                              onClick={() => setPortalStudent(student)}
+                              title="Create portal account"
+                            >
+                              <KeyRound className="size-4" />
+                            </Button>
+                          ) : null}
                           <Button
                             size="icon-sm"
                             variant="outline"
@@ -380,11 +447,12 @@ export default function StudentsPage() {
                           </Button>
                         </div>
                       </TableCell>
+                      ) : null}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-6 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={isClassTeacher ? 6 : 7} className="py-6 text-center text-sm text-muted-foreground">
                       No student records found.
                     </TableCell>
                   </TableRow>
@@ -395,6 +463,22 @@ export default function StudentsPage() {
         </CardContent>
       </Card>
 
+      {!isClassTeacher ? (
+      <CreateStudentPortalDialog
+        open={Boolean(portalStudent)}
+        onOpenChange={(open) => {
+          if (!open) setPortalStudent(null);
+        }}
+        student={portalStudent}
+        pending={createStudentPortal.isPending}
+        onSubmit={async (id, payload: CreateStudentPortalPayload) => {
+          await createStudentPortal.mutateAsync({ id, payload });
+          setPortalStudent(null);
+        }}
+      />
+      ) : null}
+
+      {!isClassTeacher ? (
       <EditStudentDialog
         open={Boolean(editingStudent)}
         onOpenChange={(open) => {
@@ -410,7 +494,9 @@ export default function StudentsPage() {
           setEditingStudent(null);
         }}
       />
+      ) : null}
 
+      {!isClassTeacher ? (
       <AlertDialog
         open={Boolean(deletingStudent)}
         onOpenChange={(open) => {
@@ -446,7 +532,118 @@ export default function StudentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      ) : null}
     </div>
+  );
+}
+
+function CreateStudentPortalDialog({
+  open,
+  onOpenChange,
+  student,
+  pending,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  student: Student | null;
+  pending: boolean;
+  onSubmit: (id: string, payload: CreateStudentPortalPayload) => Promise<unknown>;
+}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const studentId = student?._id ?? "";
+  const canSubmit =
+    Boolean(studentId) && email.trim().length > 0 && password.trim().length >= 8;
+
+  useEffect(() => {
+    if (student) {
+      setEmail("");
+      setPassword("");
+      setShowPassword(false);
+    }
+  }, [student?._id]);
+
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
+      <AlertDialogContent className="border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-indigo-50 sm:max-w-xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Create portal account</AlertDialogTitle>
+          <AlertDialogDescription>
+            {student
+              ? `Add login for ${student.firstName} ${student.lastName} (${student.admissionNumber}). They can use this email and password to sign in.`
+              : "Add login credentials for this student."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="grid gap-3">
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              type="email"
+              autoComplete="off"
+              placeholder="Login email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+            <div className="relative min-w-0 flex-1">
+              <Input
+                className="pr-11"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                placeholder="Password (min 8 characters)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="absolute right-0.5 top-1/2 z-10 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                title={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? <FiEyeOff className="size-4" /> : <FiEye className="size-4" />}
+              </Button>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+              onClick={() => {
+                setPassword(generatePassword());
+                setShowPassword(true);
+              }}
+            >
+              Generate password
+            </Button>
+          </div>
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="gap-1.5 bg-amber-600 text-white hover:bg-amber-700"
+            disabled={pending || !canSubmit}
+            onClick={async (event) => {
+              event.preventDefault();
+              if (!studentId) return;
+              await onSubmit(studentId, { loginEmail: email.trim(), loginPassword: password.trim() });
+            }}
+          >
+            <KeyRound className="size-4" />
+            Create portal
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -467,6 +664,7 @@ function EditStudentDialog({
 }) {
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
+  const [gender, setGender] = useState<"" | "MALE" | "FEMALE">("");
   const [admission, setAdmission] = useState("");
   const [clazz, setClazz] = useState("");
   const [active, setActive] = useState(true);
@@ -475,16 +673,25 @@ function EditStudentDialog({
 
   const initialFirst = student?.firstName ?? "";
   const initialLast = student?.lastName ?? "";
+  const initialGender = student?.gender ?? "";
   const initialAdmission = student?.admissionNumber ?? "";
   const initialClazz = student?.classId ?? "";
   const initialActive = student?.isActive ?? true;
 
-  const canSave =
-    Boolean(studentId) &&
-    first.trim().length > 0 &&
-    last.trim().length > 0 &&
-    admission.trim().length > 0 &&
-    Boolean(clazz);
+  const hasValidFirstChange = first.trim() !== initialFirst && first.trim().length > 0;
+  const hasValidLastChange = last.trim() !== initialLast && last.trim().length > 0;
+  const hasGenderChange = gender !== initialGender && Boolean(gender);
+  const hasValidAdmissionChange =
+    admission.trim() !== initialAdmission && admission.trim().length > 0;
+  const hasClassChange = clazz !== initialClazz && Boolean(clazz);
+  const hasStatusChange = active !== initialActive;
+  const hasAnyChange =
+    hasValidFirstChange ||
+    hasValidLastChange ||
+    hasGenderChange ||
+    hasValidAdmissionChange ||
+    hasClassChange ||
+    hasStatusChange;
 
   return (
     <AlertDialog
@@ -493,6 +700,7 @@ function EditStudentDialog({
         if (nextOpen && student) {
           setFirst(student.firstName);
           setLast(student.lastName);
+          setGender(student.gender ?? "");
           setAdmission(student.admissionNumber);
           setClazz(student.classId);
           setActive(student.isActive);
@@ -510,6 +718,19 @@ function EditStudentDialog({
         <div className="grid gap-3 md:grid-cols-2">
           <Input value={first} placeholder="First name" onChange={(event) => setFirst(event.target.value)} />
           <Input value={last} placeholder="Last name" onChange={(event) => setLast(event.target.value)} />
+          <div className="md:col-span-2">
+            <Select value={gender || undefined} onValueChange={(value) => setGender(value as "MALE" | "FEMALE")}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="MALE">Male</SelectItem>
+                  <SelectItem value="FEMALE">Female</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="relative md:col-span-2">
             <Hash className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -559,24 +780,23 @@ function EditStudentDialog({
             className="gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700"
             disabled={
               pending ||
-              !canSave ||
-              (first.trim() === initialFirst &&
-                last.trim() === initialLast &&
-                admission.trim() === initialAdmission &&
-                clazz === initialClazz &&
-                active === initialActive)
+              !hasAnyChange
             }
             onClick={async (event) => {
               event.preventDefault();
               if (!studentId) {
                 return;
               }
+              const payload: UpdateStudentPayload = {};
+              if (hasValidFirstChange) payload.firstName = first.trim();
+              if (hasValidLastChange) payload.lastName = last.trim();
+              if (hasGenderChange) payload.gender = gender;
+              if (hasValidAdmissionChange) payload.admissionNumber = admission.trim();
+              if (hasClassChange) payload.classId = clazz;
+              if (hasStatusChange) payload.isActive = active;
+
               await onSubmit(studentId, {
-                firstName: first.trim(),
-                lastName: last.trim(),
-                admissionNumber: admission.trim(),
-                classId: clazz,
-                isActive: active,
+                ...payload,
               });
             }}
           >

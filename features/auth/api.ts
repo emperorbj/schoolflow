@@ -2,6 +2,7 @@ import { apiRequest } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
   BootstrapRegisterPayload,
+  CurrentUserPermissions,
   CurrentUser,
   LoginPayload,
   LoginResponse,
@@ -24,11 +25,9 @@ export function register(payload: BootstrapRegisterPayload) {
 export function getCurrentUser() {
   return apiRequest<{
     user: CurrentUser;
-    permissions: {
-      schoolId: string;
-      role: string;
-      isClassTeacher: boolean;
-      canViewAllClasses: boolean;
-    };
-  }>(API_ENDPOINTS.auth.me).then((response) => response.user);
+    permissions: CurrentUserPermissions;
+  }>(API_ENDPOINTS.auth.me).then((response) => ({
+    ...response.user,
+    permissions: response.permissions,
+  }));
 }

@@ -42,7 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Mail } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import type { SchoolUser, SchoolUserRole, UpdateUserPayload } from "@/types/admin";
 
 function errorText(error: unknown) {
@@ -144,8 +144,18 @@ export default function AdminUsersPage() {
             </AlertDialogHeader>
 
             <div className="grid gap-2 md:grid-cols-2">
-              <Input value={firstName} placeholder="First name" onChange={(e) => setFirstName(e.target.value)} />
-              <Input value={lastName} placeholder="Last name" onChange={(e) => setLastName(e.target.value)} />
+              <Input
+                value={firstName}
+                placeholder="First name"
+                disabled={createUser.isPending}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+              <Input
+                value={lastName}
+                placeholder="Last name"
+                disabled={createUser.isPending}
+                onChange={(e) => setLastName(e.target.value)}
+              />
               <div className="relative md:col-span-2">
                 <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -153,6 +163,7 @@ export default function AdminUsersPage() {
                   value={email}
                   type="email"
                   placeholder="Email"
+                  disabled={createUser.isPending}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
@@ -164,6 +175,7 @@ export default function AdminUsersPage() {
                     autoComplete="new-password"
                     className="pr-11"
                     placeholder="Password (min 8 chars)"
+                    disabled={createUser.isPending}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                   <Button
@@ -173,6 +185,7 @@ export default function AdminUsersPage() {
                     className="absolute right-0.5 top-1/2 z-10 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     title={showRegisterPassword ? "Hide password" : "Show password"}
                     aria-label={showRegisterPassword ? "Hide password" : "Show password"}
+                    disabled={createUser.isPending}
                     onClick={() => setShowRegisterPassword((v) => !v)}
                   >
                     {showRegisterPassword ? (
@@ -186,6 +199,7 @@ export default function AdminUsersPage() {
                   type="button"
                   variant="outline"
                   className="shrink-0 sm:w-auto"
+                  disabled={createUser.isPending}
                   onClick={() => {
                     setPassword(generatePassword());
                     setShowRegisterPassword(true);
@@ -195,7 +209,11 @@ export default function AdminUsersPage() {
                 </Button>
               </div>
               <div className="md:col-span-2">
-                <Select value={role} onValueChange={(value) => setRole(value as typeof role)}>
+                <Select
+                  value={role}
+                  onValueChange={(value) => setRole(value as typeof role)}
+                  disabled={createUser.isPending}
+                >
                   <SelectTrigger className="h-10 w-full">
                     <SelectValue placeholder="Role" />
                   </SelectTrigger>
@@ -212,12 +230,13 @@ export default function AdminUsersPage() {
                   </SelectContent>
                 </Select>
               </div>
+
             </div>
 
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel disabled={createUser.isPending}>Cancel</AlertDialogCancel>
               <AlertDialogAction
-                className="bg-indigo-600 text-white hover:bg-indigo-700"
+                className="inline-flex min-w-[7.5rem] items-center justify-center gap-2 bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-100"
                 disabled={
                   createUser.isPending ||
                   !firstName.trim() ||
@@ -225,6 +244,7 @@ export default function AdminUsersPage() {
                   !email.trim() ||
                   password.length < 8
                 }
+                aria-busy={createUser.isPending}
                 onClick={async (event) => {
                   event.preventDefault();
                   await createUser.mutateAsync({
@@ -239,9 +259,17 @@ export default function AdminUsersPage() {
                   setEmail("");
                   setPassword("");
                   setShowRegisterPassword(false);
+                  setRole("ADMIN");
                 }}
               >
-                Create user
+                {createUser.isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                    <span className="sr-only">Creating user</span>
+                  </>
+                ) : (
+                  "Create user"
+                )}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

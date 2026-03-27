@@ -18,6 +18,8 @@ export const API_ENDPOINTS = {
   students: {
     list: "/api/v1/students",
     byId: (id: string) => `/api/v1/students/${id}`,
+    /** Create STUDENT user + link to existing student row (implement on API). */
+    portal: (id: string) => `/api/v1/students/${id}/portal`,
     meResults: "/api/v1/students/me/results",
   },
   assessments: {
@@ -34,6 +36,14 @@ export const API_ENDPOINTS = {
       `/api/v1/class-results/${classId}/${termId}/aggregate`,
     students: (classId: string, termId: string) =>
       `/api/v1/class-results/${classId}/${termId}/students`,
+    reportCards: (classId: string, termId: string) =>
+      `/api/v1/class-results/${classId}/${termId}/report-cards`,
+    subjectPositions: (classId: string, termId: string, subjectId: string) =>
+      `/api/v1/class-results/${classId}/${termId}/subjects/${subjectId}/positions`,
+    reportCard: (classId: string, termId: string, studentId: string) =>
+      `/api/v1/class-results/${classId}/${termId}/report-cards/${studentId}`,
+    reportCardPdf: (classId: string, termId: string, studentId: string) =>
+      `/api/v1/class-results/${classId}/${termId}/report-cards/${studentId}/pdf`,
     comments: (classId: string, termId: string) =>
       `/api/v1/class-results/${classId}/${termId}/comments`,
   },

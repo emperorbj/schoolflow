@@ -19,6 +19,8 @@ import {
   useUpdateSessionMutation,
   useUpdateSubjectMutation,
   useUpdateTermMutation,
+  useUpdateUserMutation,
+  useUsersQuery,
 } from "@/features/admin/hooks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,6 +84,7 @@ export default function AdminPage() {
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
   const terms = useTermsQuery();
+  const users = useUsersQuery();
 
   const createSession = useCreateSessionMutation();
   const updateSession = useUpdateSessionMutation();
@@ -91,6 +94,7 @@ export default function AdminPage() {
   const updateSubject = useUpdateSubjectMutation();
   const createTerm = useCreateTermMutation();
   const updateTerm = useUpdateTermMutation();
+  const updateUser = useUpdateUserMutation();
   const deleteSession = useDeleteSessionMutation();
   const deleteClass = useDeleteClassMutation();
   const deleteSubject = useDeleteSubjectMutation();
@@ -107,20 +111,28 @@ export default function AdminPage() {
   const classRows = classes.data?.classes ?? [];
   const subjectRows = subjects.data?.subjects ?? [];
   const termRows = terms.data?.terms ?? [];
+  const classTeacherOptions = (users.data?.users ?? [])
+    .filter((u) => u.role === "CLASS_TEACHER" && u.isActive)
+    .map((u) => ({
+      id: u.id,
+      label: `${u.firstName} ${u.lastName} (${u.email})`,
+    }));
 
   const isLoadingAny =
-    sessions.isLoading || classes.isLoading || subjects.isLoading || terms.isLoading;
+    sessions.isLoading || classes.isLoading || subjects.isLoading || terms.isLoading || users.isLoading;
   const allErrors = [
     sessions.error,
     terms.error,
     classes.error,
     subjects.error,
+    users.error,
     createSession.error,
     updateSession.error,
     createTerm.error,
     updateTerm.error,
     createClass.error,
     updateClass.error,
+    updateUser.error,
     createSubject.error,
     updateSubject.error,
     deleteSession.error,
@@ -287,6 +299,7 @@ export default function AdminPage() {
                     name: picked.name,
                     order: picked.order,
                   });
+                  setTermSessionId("");
                   setTermSelect("");
                 }}
               >
@@ -312,7 +325,7 @@ export default function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>Classes</CardTitle>
-            <CardDescription>Create classes and update class metadata.</CardDescription>
+            <CardDescription>Create classes, assign class teachers, and update class metadata.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-2 md:grid-cols-3">
@@ -364,10 +377,30 @@ export default function AdminPage() {
                   id={row._id}
                   name={row.name}
                   arm={row.arm}
+                  classTeacherUserId={row.classTeacherUserId}
                   isActive={row.isActive}
-                  onSave={(payload) => updateClass.mutateAsync({ id: row._id, payload })}
+                  onSave={async (payload) => {
+                    await updateClass.mutateAsync({ id: row._id, payload });
+                    const previousTeacherId = row.classTeacherUserId;
+                    const nextTeacherId = payload.classTeacherUserId ?? null;
+
+                    // Keep user.classTeacherClassId synced with class assignment for RBAC checks.
+                    if (previousTeacherId && previousTeacherId !== nextTeacherId) {
+                      await updateUser.mutateAsync({
+                        id: previousTeacherId,
+                        payload: { classTeacherClassId: null },
+                      });
+                    }
+                    if (nextTeacherId) {
+                      await updateUser.mutateAsync({
+                        id: nextTeacherId,
+                        payload: { classTeacherClassId: row._id },
+                      });
+                    }
+                  }}
                   onDelete={() => deleteClass.mutateAsync(row._id)}
                   deletePending={deleteClass.isPending}
+                  classTeacherOptions={classTeacherOptions}
                 />
               ))}
             </div>
@@ -608,21 +641,31 @@ function ClassRow({
   id,
   name,
   arm,
+  classTeacherUserId,
   isActive,
   onSave,
   onDelete,
   deletePending,
+  classTeacherOptions,
 }: {
   id: string;
   name: string;
   arm: string;
+  classTeacherUserId: string | null;
   isActive: boolean;
-  onSave: (payload: { name: string; arm: string; isActive: boolean }) => Promise<unknown>;
+  onSave: (payload: {
+    name: string;
+    arm: string;
+    classTeacherUserId: string | null;
+    isActive: boolean;
+  }) => Promise<unknown>;
   onDelete: () => Promise<unknown>;
   deletePending: boolean;
+  classTeacherOptions: { id: string; label: string }[];
 }) {
   const [nameValue, setNameValue] = useState(name);
   const [armValue, setArmValue] = useState(arm);
+  const [classTeacherValue, setClassTeacherValue] = useState(classTeacherUserId ?? "__none__");
   const [active, setActive] = useState(isActive);
   const [pending, setPending] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -659,6 +702,21 @@ function ClassRow({
           </SelectGroup>
         </SelectContent>
       </Select>
+      <Select value={classTeacherValue} onValueChange={setClassTeacherValue}>
+        <SelectTrigger className="h-10 min-w-[240px] flex-1">
+          <SelectValue placeholder="Class teacher" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem value="__none__">No class teacher</SelectItem>
+            {classTeacherOptions.map((teacher) => (
+              <SelectItem key={teacher.id} value={teacher.id}>
+                {teacher.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
       <ActiveToggle active={active} onChange={setActive} />
       <Button
         size="sm"
@@ -669,6 +727,7 @@ function ClassRow({
           await onSave({
             name: nameValue.trim(),
             arm: armValue.trim(),
+            classTeacherUserId: classTeacherValue === "__none__" ? null : classTeacherValue,
             isActive: active,
           });
           setPending(false);

@@ -102,6 +102,8 @@ export default function MaterialsPage() {
                 subjectId,
               });
               setTitle("");
+              setClassId("");
+              setSubjectId("");
               setFile(null);
             }}
           >

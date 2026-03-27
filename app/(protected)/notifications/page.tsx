@@ -102,6 +102,10 @@ export default function NotificationsPage() {
                 subject: subject.trim() || undefined,
                 message: message.trim(),
               });
+              setTermId("");
+              setRecipientsCsv("");
+              setSubject("Results released");
+              setMessage("");
             }}
           >
             Send results released
@@ -130,6 +134,8 @@ export default function NotificationsPage() {
                 recipients,
                 thresholdAverage,
               });
+              setTermId("");
+              setRecipientsCsv("");
             }}
           >
             Send low performance alert

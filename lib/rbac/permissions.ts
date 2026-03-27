@@ -24,10 +24,10 @@ const routeAccess: Record<AppRoute, UserRole[]> = {
   ],
   "/admin": ["SUPER_ADMIN", "ADMIN"],
   "/students": ["SUPER_ADMIN", "ADMIN", "CLASS_TEACHER", "HEADTEACHER", "PRINCIPAL"],
-  "/assessments": ["SUBJECT_TEACHER", "CLASS_TEACHER", "ADMIN", "SUPER_ADMIN"],
+  "/assessments": ["SUBJECT_TEACHER", "CLASS_TEACHER", "ADMIN"],
   "/class-results": ["CLASS_TEACHER", "HEADTEACHER", "PRINCIPAL", "ADMIN", "SUPER_ADMIN"],
-  "/headteacher": ["HEADTEACHER", "PRINCIPAL", "ADMIN", "SUPER_ADMIN"],
-  "/principal": ["PRINCIPAL", "SUPER_ADMIN"],
+  "/headteacher": ["HEADTEACHER", "PRINCIPAL", "ADMIN"],
+  "/principal": ["PRINCIPAL"],
   "/results": ["STUDENT"],
   "/materials": [
     "SUPER_ADMIN",

@@ -90,6 +90,11 @@ const quickActions = [
   },
 ] as const;
 
+/** Super admin uses admin tooling only — not teacher / leadership-only surfaces. */
+const superAdminQuickActions = quickActions.filter(
+  (item) => item.href !== "/assessments",
+) as unknown as RoleQuickAction[];
+
 const chartConfig = {
   total: { label: "Users", color: "#93C5FD" },
   assigned: { label: "Assigned", color: "#34D399" },
@@ -108,6 +113,7 @@ type RoleQuickAction = {
 export default function DashboardPage() {
   const me = useCurrentUserQuery();
   const role = me.data?.role;
+  const canUseAssessments = me.data?.permissions?.canUseAssessments === true;
   const isSuperAdmin = role === "SUPER_ADMIN";
   const isAdmin = role === "ADMIN";
   const isAdminLike = isSuperAdmin || isAdmin;
@@ -186,6 +192,36 @@ export default function DashboardPage() {
     total: (users.data?.users ?? []).filter((u) => u.role === role).length,
   }));
   const roleChartHasData = userRoleBarData.some((r) => r.total > 0);
+  const userRoleYAxisMax = useMemo(() => {
+    const list = users.data?.users ?? [];
+    const roles = [
+      "ADMIN",
+      "SUBJECT_TEACHER",
+      "CLASS_TEACHER",
+      "HEADTEACHER",
+      "PRINCIPAL",
+      "STUDENT",
+      "PARENT",
+    ] as const;
+    const maxCount = roles.reduce(
+      (acc, r) => Math.max(acc, list.filter((u) => u.role === r).length),
+      0,
+    );
+    if (maxCount <= 0) {
+      return 20;
+    }
+    const padded = Math.ceil(maxCount * 1.2);
+    if (padded <= 50) {
+      return Math.max(20, Math.ceil(padded / 5) * 5);
+    }
+    if (padded <= 200) {
+      return Math.ceil(padded / 10) * 10;
+    }
+    if (padded <= 2000) {
+      return Math.ceil(padded / 50) * 50;
+    }
+    return Math.ceil(padded / 100) * 100;
+  }, [users.data?.users]);
   const coveragePieData = [
     {
       name: "Assigned",
@@ -208,7 +244,7 @@ export default function DashboardPage() {
     (role === "STUDENT" && studentTerms.isLoading);
 
   const roleQuickActions: Record<string, RoleQuickAction[]> = {
-    SUPER_ADMIN: quickActions as unknown as RoleQuickAction[],
+    SUPER_ADMIN: superAdminQuickActions,
     ADMIN: [
       { href: "/admin", label: "School setup", hint: "Manage sessions, terms, classes, subjects", icon: School, borderClass: "border-indigo-200" },
       { href: "/admin/users", label: "User management", hint: "Register, edit, and disable users", icon: Users, borderClass: "border-sky-200" },
@@ -246,7 +282,9 @@ export default function DashboardPage() {
     ],
   };
 
-  const scopedQuickActions = role ? roleQuickActions[role] ?? [] : [];
+  const scopedQuickActions = (role ? roleQuickActions[role] ?? [] : []).filter(
+    (action) => action.href !== "/assessments" || canUseAssessments,
+  );
   const subjectTeacherStats = useMemo(() => {
     const teachingContextsRows = teachingContexts.data?.contexts ?? [];
     const uniqueClassIds = new Set<string>();
@@ -526,7 +564,11 @@ export default function DashboardPage() {
                     tickMargin={8}
                     tickFormatter={(value) => value.split(" ").map((s: string) => s[0]).join("")}
                   />
-                  <YAxis allowDecimals={false} />
+                  <YAxis
+                    allowDecimals={false}
+                    domain={[0, userRoleYAxisMax]}
+                    tickCount={6}
+                  />
                   <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                   <Bar dataKey="total" fill="var(--color-total)" radius={8} />
                 </BarChart>

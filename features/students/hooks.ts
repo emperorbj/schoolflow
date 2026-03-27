@@ -48,6 +48,17 @@ export function useDeleteStudentMutation() {
   });
 }
 
+export function useCreateStudentPortalMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof api.createStudentPortal>[1] }) =>
+      api.createStudentPortal(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+    },
+  });
+}
+
 export function useStudentMeResultsQuery(termId: string | null, enabled = true) {
   return useQuery({
     queryKey: ["students", "me", "results", termId],

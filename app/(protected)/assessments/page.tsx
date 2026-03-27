@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ScoreSheetRow } from "@/types/assessments";
+import { RequireRouteAccess } from "@/components/auth/require-route-access";
 import { cn } from "@/lib/utils";
 import {
   CheckCircle2,
@@ -142,6 +143,14 @@ function ScoreRowSummary({ totalPercent, grade }: { totalPercent: number; grade:
 }
 
 export default function AssessmentsPage() {
+  return (
+    <RequireRouteAccess route="/assessments">
+      <AssessmentsPageContent />
+    </RequireRouteAccess>
+  );
+}
+
+function AssessmentsPageContent() {
   const me = useCurrentUserQuery();
   const role = me.data?.role;
 
@@ -154,6 +163,7 @@ export default function AssessmentsPage() {
 
 function SubjectTeacherAssessments() {
   const contexts = useTeachingContextsQuery();
+  const contextRows = contexts.data?.contexts ?? [];
   const [selectedContextId, setSelectedContextId] = useState("");
   const selectedContext = useMemo(
     () => (contexts.data?.contexts ?? []).find((ctx) => ctx._id === selectedContextId),
@@ -221,7 +231,7 @@ function SubjectTeacherAssessments() {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {(contexts.data?.contexts ?? []).map((ctx) => {
+                {contextRows.map((ctx) => {
               const classLabel =
                 typeof ctx.classId === "string" ? ctx.classId : `${ctx.classId.name} ${ctx.classId.arm}`;
               const subjectLabel =
@@ -238,6 +248,11 @@ function SubjectTeacherAssessments() {
               </SelectGroup>
             </SelectContent>
           </Select>
+          {contexts.data && contextRows.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              No active teaching assignment for this term/class.
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -350,6 +365,7 @@ function SubjectTeacherAssessments() {
               onClick={async () => {
                 if (!selection) return;
                 await submitScores.mutateAsync(selection);
+                setSelectedContextId("");
               }}
             >
               <Lock className="size-4 shrink-0" aria-hidden />
@@ -474,6 +490,7 @@ function ClassTeacherAssessments() {
           classId={classId}
           subjectId={effectiveSubjectId}
           termId={termId}
+          onAfterSubmitLock={() => setSelectedSubjectId("")}
         />
       ) : (
         <Card>
@@ -491,10 +508,13 @@ function ScoreSheetEditor({
   classId,
   subjectId,
   termId,
+  onAfterSubmitLock,
 }: {
   classId: string;
   subjectId: string;
   termId: string;
+  /** Called after subject results are submitted and locked (e.g. clear subject picker). */
+  onAfterSubmitLock?: () => void;
 }) {
   const scoreSheet = useScoreSheetQuery({ classId, subjectId, termId }, true);
   const putScores = usePutScoreSheetMutation();
@@ -624,6 +644,7 @@ function ScoreSheetEditor({
                 subjectId,
                 termId,
               });
+              onAfterSubmitLock?.();
             }}
           >
             <Lock className="size-4 shrink-0" aria-hidden />

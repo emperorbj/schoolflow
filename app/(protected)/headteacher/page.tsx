@@ -20,12 +20,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RequireRouteAccess } from "@/components/auth/require-route-access";
 
 function errorText(error: unknown) {
   return error instanceof ApiError ? error.message : "Request failed";
 }
 
 export default function HeadteacherPage() {
+  return (
+    <RequireRouteAccess route="/headteacher">
+      <HeadteacherPageContent />
+    </RequireRouteAccess>
+  );
+}
+
+function HeadteacherPageContent() {
   const terms = useTermsQuery();
   const [termId, setTermId] = useState("");
   const [classId, setClassId] = useState("");

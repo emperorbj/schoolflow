@@ -2,6 +2,7 @@ import { apiRequest } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
   CreateStudentPayload,
+  CreateStudentPortalPayload,
   ListStudentsQuery,
   Student,
   StudentMyResultsResponse,
@@ -44,6 +45,13 @@ export function updateStudent(id: string, payload: UpdateStudentPayload) {
 export function deleteStudent(id: string) {
   return apiRequest<void>(API_ENDPOINTS.students.byId(id), {
     method: "DELETE",
+  });
+}
+
+export function createStudentPortal(id: string, payload: CreateStudentPortalPayload) {
+  return apiRequest<StudentResponse>(API_ENDPOINTS.students.portal(id), {
+    method: "POST",
+    body: payload,
   });
 }
 

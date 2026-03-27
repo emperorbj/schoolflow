@@ -308,6 +308,9 @@ export default function AdminAssignmentsPage() {
                     subjectId: assignSubjectId,
                     termId: assignTermId,
                   });
+                  setAssignTeacherId("");
+                  setAssignSubjectId("");
+                  setAssignTermId("");
                 }}
               >
                 <BookUser className="size-4" />

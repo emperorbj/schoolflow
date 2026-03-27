@@ -44,10 +44,17 @@ const navItems: { href: AppRoute; label: string; icon: React.ComponentType<{ cla
 export function AppShell({ user, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const canUseAssessments = user.permissions?.canUseAssessments === true;
   const allowedItems =
     user.role === "STUDENT"
-      ? navItems.filter((item) => ["/results", "/materials"].includes(item.href))
-      : navItems.filter((item) => canAccess(item.href, user.role) && item.href !== "/results");
+      ? ["/dashboard", "/results", "/materials"]
+          .map((href) => navItems.find((item) => item.href === href))
+          .filter((item): item is (typeof navItems)[number] => Boolean(item))
+      : navItems.filter((item) => {
+          if (item.href === "/results") return false;
+          if (item.href === "/assessments" && !canUseAssessments) return false;
+          return canAccess(item.href, user.role);
+        });
   const [profileOpen, setProfileOpen] = useState(false);
 
   const onLogout = () => {
@@ -70,6 +77,10 @@ export function AppShell({ user, children }: AppShellProps) {
             const isActive =
               pathname === item.href || pathname?.startsWith(`${item.href}/`);
             const Icon = item.icon;
+            const label =
+              user.role === "STUDENT" && item.href === "/dashboard"
+                ? "Student dashboard"
+                : item.label;
 
             return (
               <Link
@@ -82,7 +93,7 @@ export function AppShell({ user, children }: AppShellProps) {
                 }`}
               >
                 <Icon className="size-4" />
-                {item.label}
+                {label}
               </Link>
             );
           })}

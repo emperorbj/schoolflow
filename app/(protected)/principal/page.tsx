@@ -23,12 +23,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RequireRouteAccess } from "@/components/auth/require-route-access";
 
 function errorText(error: unknown) {
   return error instanceof ApiError ? error.message : "Request failed";
 }
 
 export default function PrincipalPage() {
+  return (
+    <RequireRouteAccess route="/principal">
+      <PrincipalPageContent />
+    </RequireRouteAccess>
+  );
+}
+
+function PrincipalPageContent() {
   const terms = useTermsQuery();
   const classes = useClassesQuery();
   const [termId, setTermId] = useState("");

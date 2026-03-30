@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { useState } from "react";
 import { useTermsQuery } from "@/features/admin/hooks";
 import {
   useHeadteacherClassesQuery,
@@ -10,8 +9,8 @@ import {
   useHeadteacherStudentPerformanceQuery,
 } from "@/features/leadership/hooks";
 import { ApiError } from "@/lib/api/client";
+import { SubjectPerformanceBarChartCard } from "@/components/leadership/subject-performance-bar-chart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import {
   Select,
   SelectContent,
@@ -44,15 +43,6 @@ function HeadteacherPageContent() {
   const classes = useHeadteacherClassesQuery(termId);
   const classStudents = useHeadteacherClassStudentsQuery(classId, termId);
   const studentPerformance = useHeadteacherStudentPerformanceQuery(studentId, termId || undefined);
-
-  const chartData = useMemo(
-    () =>
-      (classes.data?.classes ?? []).map((row) => ({
-        classLabel: `${row.name}${row.arm}`,
-        avgPerformance: row.avgPerformance,
-      })),
-    [classes.data?.classes],
-  );
 
   const topError =
     terms.error ??
@@ -111,41 +101,22 @@ function HeadteacherPageContent() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Class averages</CardTitle>
-          <CardDescription>Term performance comparison by class.</CardDescription>
+          <CardTitle>Class focus</CardTitle>
+          <CardDescription>
+            Choose a class to load subject averages and the student list (requires term above).
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer
-            config={{
-              avgPerformance: { label: "Average", color: "oklch(0.6 0.13 250)" },
-            }}
-          >
-            <BarChart data={chartData}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="classLabel" />
-              <YAxis domain={[0, 100]} />
-              <ChartTooltip />
-              <Bar dataKey="avgPerformance" fill="var(--color-avgPerformance)" radius={6} />
-            </BarChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Class students</CardTitle>
-          <CardDescription>Select class to view ranking and comments.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
           <Select
             value={classId || undefined}
             onValueChange={(value) => {
               setClassId(value);
               setStudentId("");
             }}
+            disabled={!termId}
           >
             <SelectTrigger className="h-10 w-full">
-              <SelectValue placeholder="Select class" />
+              <SelectValue placeholder={termId ? "Select class" : "Select a term first"} />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -157,7 +128,24 @@ function HeadteacherPageContent() {
               </SelectGroup>
             </SelectContent>
           </Select>
+        </CardContent>
+      </Card>
 
+      <SubjectPerformanceBarChartCard
+        classId={classId || null}
+        termId={termId || null}
+        emptyDescription="Select a term and class to see mean score (%) per subject from aggregated results."
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Students in class</CardTitle>
+          <CardDescription>Ranking and drill-down for the class selected above.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {!classId ? (
+            <p className="text-sm text-muted-foreground">Select a class to list students.</p>
+          ) : null}
           {(classStudents.data?.students ?? []).map((s) => (
             <button
               key={s.studentId}

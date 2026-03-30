@@ -150,11 +150,31 @@ export default function AssessmentsPage() {
   );
 }
 
+function hasActiveTeachingAssignments(me: NonNullable<ReturnType<typeof useCurrentUserQuery>["data"]>) {
+  const p = me.permissions;
+  if (!p) return false;
+  if (p.hasTeachingAssignments === true) return true;
+  if (typeof p.activeTeachingAssignments === "number" && p.activeTeachingAssignments > 0) return true;
+  return false;
+}
+
 function AssessmentsPageContent() {
   const me = useCurrentUserQuery();
-  const role = me.data?.role;
+
+  if (me.isLoading || !me.data) {
+    return (
+      <div className="space-y-6">
+        <p className="text-sm text-muted-foreground">Loading assessments…</p>
+      </div>
+    );
+  }
+
+  const role = me.data.role;
 
   if (role === "CLASS_TEACHER") {
+    if (hasActiveTeachingAssignments(me.data)) {
+      return <SubjectTeacherAssessments />;
+    }
     return <ClassTeacherAssessments />;
   }
 
@@ -379,16 +399,25 @@ function SubjectTeacherAssessments() {
 }
 
 function ClassTeacherAssessments() {
-  const classes = useClassesQuery();
+  const me = useCurrentUserQuery();
+  const ownClassId = me.data?.classTeacherClassId?.trim() ? me.data.classTeacherClassId.trim() : "";
+  const classes = useClassesQuery(Boolean(ownClassId));
   const terms = useTermsQuery();
   const subjects = useSubjectsQuery();
-  const [classId, setClassId] = useState("");
   const [termId, setTermId] = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
-  const status = useSubmissionStatusQuery(classId && termId ? { classId, termId } : null);
+  const status = useSubmissionStatusQuery(
+    ownClassId && termId ? { classId: ownClassId, termId } : null,
+  );
 
   const subjectMap = new Map((subjects.data?.subjects ?? []).map((s) => [s._id, `${s.name} (${s.code})`]));
-  const topError = classes.error ?? terms.error ?? subjects.error ?? status.error;
+  const ownClassLabel = useMemo(() => {
+    if (!ownClassId) return null;
+    const c = classes.data?.classes?.find((row) => row._id === ownClassId);
+    return c ? `${c.name} ${c.arm}` : ownClassId;
+  }, [ownClassId, classes.data?.classes]);
+
+  const topError = me.error ?? classes.error ?? terms.error ?? subjects.error ?? status.error;
 
   const firstSubjectId = status.data?.subjects?.[0]?.subjectId ?? "";
   const effectiveSubjectId = selectedSubjectId || firstSubjectId;
@@ -407,24 +436,31 @@ function ClassTeacherAssessments() {
       <Card>
         <CardHeader>
           <CardTitle>Filters</CardTitle>
-          <CardDescription>Select class and term.</CardDescription>
+          <CardDescription>
+            Submission status is limited to your assigned class as class teacher. Choose the term
+            below.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-2 md:grid-cols-2">
-          <Select value={classId || undefined} onValueChange={setClassId}>
-            <SelectTrigger className="h-10 w-full">
-              <SelectValue placeholder="Class" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {(classes.data?.classes ?? []).map((row) => (
-                  <SelectItem key={row._id} value={row._id}>
-                    {row.name} {row.arm}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <Select value={termId || undefined} onValueChange={setTermId}>
+          {me.isLoading ? (
+            <p className="text-sm text-muted-foreground md:col-span-2">Loading your profile…</p>
+          ) : !ownClassId ? (
+            <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 md:col-span-2 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+              No class is linked to your account as class teacher. An admin must set your class
+              (user <span className="font-medium">classTeacherClassId</span>) to match the class you
+              lead, then submission status and scoring will work for that class.
+            </p>
+          ) : (
+            <div className="flex min-h-10 items-center rounded-md border bg-muted/40 px-3 text-sm md:col-span-1">
+              <span className="text-muted-foreground">Your class —</span>
+              <span className="ml-2 font-medium">{ownClassLabel}</span>
+            </div>
+          )}
+          <Select
+            value={termId || undefined}
+            onValueChange={setTermId}
+            disabled={!ownClassId}
+          >
             <SelectTrigger className="h-10 w-full">
               <SelectValue placeholder="Term" />
             </SelectTrigger>
@@ -484,10 +520,10 @@ function ClassTeacherAssessments() {
         </CardContent>
       </Card>
 
-      {classId && termId && effectiveSubjectId ? (
+      {ownClassId && termId && effectiveSubjectId ? (
         <ScoreSheetEditor
-          key={`${classId}-${effectiveSubjectId}-${termId}`}
-          classId={classId}
+          key={`${ownClassId}-${effectiveSubjectId}-${termId}`}
+          classId={ownClassId}
           subjectId={effectiveSubjectId}
           termId={termId}
           onAfterSubmitLock={() => setSelectedSubjectId("")}

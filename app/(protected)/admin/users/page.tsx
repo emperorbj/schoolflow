@@ -284,8 +284,8 @@ export default function AdminUsersPage() {
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
-            <TableHead>User ID</TableHead>
-            <TableHead>School ID</TableHead>
+            {/* <TableHead>User ID</TableHead>
+            <TableHead>School ID</TableHead> */}
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -300,12 +300,12 @@ export default function AdminUsersPage() {
                   {user.role}
                 </span>
               </TableCell>
-              <TableCell>
+              {/* <TableCell>
                 <CopyableId value={user.id} />
-              </TableCell>
-              <TableCell>
+              </TableCell> */}
+              {/* <TableCell>
                 <CopyableId value={user.schoolId} />
-              </TableCell>
+              </TableCell> */}
               <TableCell>
                 <span
                   className={`inline-flex rounded-md border px-2 py-1 text-xs font-medium ${

@@ -1,12 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { useState } from "react";
 import { useClassesQuery, useTermsQuery } from "@/features/admin/hooks";
 import {
   useApprovePromotionsMutation,
   useLockTermMutation,
-  usePrincipalClassStudentsQuery,
   usePrincipalOverviewQuery,
   usePromotionsPreviewQuery,
 } from "@/features/leadership/hooks";
@@ -14,7 +12,7 @@ import { ApiError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import { SubjectPerformanceBarChartCard } from "@/components/leadership/subject-performance-bar-chart";
 import {
   Select,
   SelectContent,
@@ -44,28 +42,15 @@ function PrincipalPageContent() {
   const [classId, setClassId] = useState("");
 
   const overview = usePrincipalOverviewQuery(termId);
-  const classStudents = usePrincipalClassStudentsQuery(classId, termId);
   const preview = usePromotionsPreviewQuery(termId);
   const approve = useApprovePromotionsMutation();
   const lockTerm = useLockTermMutation();
-
-  const chartData = useMemo(() => {
-    const students = classStudents.data?.students ?? [];
-    return students
-      .slice()
-      .sort((a, b) => a.position - b.position)
-      .map((s) => ({
-        label: `${s.position}`,
-        average: s.average,
-      }));
-  }, [classStudents.data?.students]);
 
   const [reasonByStudent, setReasonByStudent] = useState<Record<string, string>>({});
   const topError =
     terms.error ??
     classes.error ??
     overview.error ??
-    classStudents.error ??
     preview.error ??
     approve.error ??
     lockTerm.error;
@@ -125,33 +110,7 @@ function PrincipalPageContent() {
         <StatCard title="Pass Rate %" value={overview.data?.passRatePercent ?? 0} />
       </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Class performance curve</CardTitle>
-          <CardDescription>Average by class position (selected class).</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer
-            config={{
-              average: { label: "Average", color: "oklch(0.72 0.17 150)" },
-            }}
-          >
-            <AreaChart data={chartData}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="label" />
-              <YAxis domain={[0, 100]} />
-              <ChartTooltip />
-              <Area
-                type="monotone"
-                dataKey="average"
-                stroke="var(--color-average)"
-                fill="var(--color-average)"
-                fillOpacity={0.2}
-              />
-            </AreaChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
+      <SubjectPerformanceBarChartCard classId={classId || null} termId={termId || null} />
 
       <Card>
         <CardHeader>

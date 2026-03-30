@@ -46,6 +46,14 @@ function errorText(error: unknown) {
   return error instanceof ApiError ? error.message : "Request failed";
 }
 
+const TEACHING_ASSIGNMENT_USER_ROLES = ["SUBJECT_TEACHER", "CLASS_TEACHER"] as const;
+
+function roleLabelForAssignment(role: string) {
+  if (role === "CLASS_TEACHER") return "Class teacher";
+  if (role === "SUBJECT_TEACHER") return "Subject teacher";
+  return role;
+}
+
 export default function AdminAssignmentsPage() {
   const classes = useClassesQuery();
   const terms = useTermsQuery();
@@ -63,15 +71,33 @@ export default function AdminAssignmentsPage() {
   const [assignTeacherId, setAssignTeacherId] = useState("");
   const [assignSubjectId, setAssignSubjectId] = useState("");
   const [assignTermId, setAssignTermId] = useState("");
+  /** Remount Radix Selects after submit so cleared values show as empty (placeholder). */
+  const [assignFormSelectKey, setAssignFormSelectKey] = useState(0);
 
   const classRows = classes.data?.classes ?? [];
   const termRows = terms.data?.terms ?? [];
   const subjectRows = subjects.data?.subjects ?? [];
 
-  const subjectTeachers = useMemo(
-    () => (users.data?.users ?? []).filter((u) => u.role === "SUBJECT_TEACHER" && u.isActive),
-    [users.data?.users],
-  );
+  const teachersForAssignment = useMemo(() => {
+    const list = (users.data?.users ?? []).filter(
+      (u) => u.isActive && TEACHING_ASSIGNMENT_USER_ROLES.includes(u.role as (typeof TEACHING_ASSIGNMENT_USER_ROLES)[number]),
+    );
+    return [...list].sort((a, b) =>
+      `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, undefined, {
+        sensitivity: "base",
+      }),
+    );
+  }, [users.data?.users]);
+
+  const unexpectedAssignmentTeacherIds = useMemo(() => {
+    const ids = coverage.data?.assignedTeacherIdsNotSubjectTeacherRole ?? [];
+    const list = users.data?.users;
+    if (!list?.length) return ids;
+    return ids.filter((id) => {
+      const u = list.find((x) => x.id === id);
+      return !u || u.role !== "CLASS_TEACHER";
+    });
+  }, [coverage.data?.assignedTeacherIdsNotSubjectTeacherRole, users.data?.users]);
 
   return (
     <div className="space-y-6">
@@ -81,7 +107,8 @@ export default function AdminAssignmentsPage() {
             <div>
               <h1 className="text-2xl font-semibold">Teacher-subject assignments</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Assign subject teachers to classes, view coverage, and unassign when needed.
+                Assign staff who teach each subject (subject teachers or class teachers), view
+                coverage, and unassign when needed.
               </p>
             </div>
             <Button variant="outline" asChild className="gap-2">
@@ -175,13 +202,13 @@ export default function AdminAssignmentsPage() {
               <CardDescription>{coverage.data.scopeNote}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {coverage.data.assignedTeacherIdsNotSubjectTeacherRole.length > 0 ? (
+              {unexpectedAssignmentTeacherIds.length > 0 ? (
                 <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
                   <span className="inline-flex items-center gap-1 font-medium">
                     <CircleAlert className="size-4" />
-                    Some assignments reference users who are not active subject teachers:
+                    Some assignments reference users who are not subject or class teachers:
                   </span>{" "}
-                  {coverage.data.assignedTeacherIdsNotSubjectTeacherRole.join(", ")}
+                  {unexpectedAssignmentTeacherIds.join(", ")}
                 </p>
               ) : null}
               <div className="grid gap-4 md:grid-cols-2">
@@ -233,19 +260,20 @@ export default function AdminAssignmentsPage() {
             </CardHeader>
             <CardContent className="flex flex-wrap items-end gap-3">
               <div className="space-y-1">
-                <span className="text-xs text-muted-foreground">Subject teacher</span>
+                <span className="text-xs text-muted-foreground">Teacher</span>
                 <Select
+                  key={`teacher-${assignFormSelectKey}`}
                   value={assignTeacherId || undefined}
                   onValueChange={(v) => setAssignTeacherId(v ?? "")}
                 >
-                  <SelectTrigger className="h-10 w-[250px]">
-                    <SelectValue placeholder="Teacher" />
+                  <SelectTrigger className="h-10 w-[280px]">
+                    <SelectValue placeholder="Select teacher" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {subjectTeachers.map((u) => (
+                      {teachersForAssignment.map((u) => (
                         <SelectItem key={u.id} value={u.id}>
-                          {u.firstName} {u.lastName} ({u.email})
+                          {u.firstName} {u.lastName} ({u.email}) — {roleLabelForAssignment(u.role)}
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -255,6 +283,7 @@ export default function AdminAssignmentsPage() {
               <div className="space-y-1">
                 <span className="text-xs text-muted-foreground">Subject</span>
                 <Select
+                  key={`subject-${assignFormSelectKey}`}
                   value={assignSubjectId || undefined}
                   onValueChange={(v) => setAssignSubjectId(v ?? "")}
                 >
@@ -275,6 +304,7 @@ export default function AdminAssignmentsPage() {
               <div className="space-y-1">
                 <span className="text-xs text-muted-foreground">Term</span>
                 <Select
+                  key={`term-${assignFormSelectKey}`}
                   value={assignTermId || undefined}
                   onValueChange={(v) => setAssignTermId(v ?? "")}
                 >
@@ -311,6 +341,7 @@ export default function AdminAssignmentsPage() {
                   setAssignTeacherId("");
                   setAssignSubjectId("");
                   setAssignTermId("");
+                  setAssignFormSelectKey((k) => k + 1);
                 }}
               >
                 <BookUser className="size-4" />

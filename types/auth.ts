@@ -25,6 +25,8 @@ export type CurrentUser = {
   lastName: string;
   email: string;
   role: UserRole;
+  /** Set for CLASS_TEACHER; must match when calling submission-status for own class. */
+  classTeacherClassId?: string | null;
   permissions?: CurrentUserPermissions;
 };
 

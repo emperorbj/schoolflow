@@ -13,6 +13,7 @@ import { useLoginMutation } from "@/features/auth/hooks";
 import { ApiError } from "@/lib/api/client";
 import { Mail } from "lucide-react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import Image from "next/image";
 
 const loginSchema = z.object({
   email: z.email("Enter a valid email address"),
@@ -54,9 +55,6 @@ export default function LoginPage() {
           <section className="relative hidden p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-between">
             <div className="absolute inset-0 bg-indigo-600" />
             <div className="relative z-10">
-              <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary-foreground/90">
-                Schoolflow
-              </p>
               <h1 className="mt-10 text-5xl font-semibold leading-tight">
                 Fast, clear school operations for every role.
               </h1>
@@ -82,7 +80,10 @@ export default function LoginPage() {
           <section className="flex flex-col justify-center p-6 sm:p-10 lg:p-12">
             <div className="mx-auto w-full max-w-md">
               <div>
-                <h2 className="text-3xl font-semibold tracking-tight">Welcome Back</h2>
+                <div className="flex items-center gap-2">
+                  <Image src="/logo.svg" alt="Schoolflow" width={100} height={100} />
+                  <h2 className="text-3xl font-semibold tracking-tight">Welcome Back</h2>
+                </div>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Please enter your details to sign in.
                 </p>
